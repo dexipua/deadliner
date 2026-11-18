@@ -1,0 +1,6 @@
+.env
+target/
+.idea/
+*.iml
+.superpowers/
+src/test/resources/fixtures/*.real.ics

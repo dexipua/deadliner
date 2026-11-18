@@ -134,7 +134,7 @@ One backend, not microservices: simpler to run, test and explain.
 - Hosting: decide in Week 0 between a cheap VPS and Fly.io; the domain is needed only for Phase 2.
 
 ### Settled after the builder check (Claude's calls)
-- **What counts as a deadline:** assignment due dates and quiz *close* events; skip "opens" events, attendance and site/personal events. Exact filter (Moodle event type in the iCal `CATEGORIES`/UID, or title keywords) is fixed in Week 0 from a real KSE feed, which also becomes the anonymised test fixture.
+- **What counts as a deadline:** assignment due dates and quiz *close* events; skip "opens" events, attendance and site/personal events. **Verified on the real KSE feed (2026-11-19, Moodle 4.2):** a deadline is a `VEVENT` whose `SUMMARY` ends with ` is due`, ` закрито` or ` closes`; events ending with ` доступно` / ` opens` and events with no such suffix are skipped. The title is the summary without that suffix. `CATEGORIES` holds the course (e.g. `CS201 (2026-2027)`; site events have none). `UID` is `<id>@teaching.kse.org.ua`. Summaries contain HTML entities (`&amp\;`) that must be unescaped. A wrong token returns HTTP 200 `text/html` "Invalid authentication". The export URL works without a session cookie. Anonymised fixture: `src/test/resources/fixtures/kse-sample.ics` (8 events, 5 deadlines).
 - **GONE rule:** only *future* items missing from the feed become GONE. Past items that leave the export window are kept as-is, so stats keep their history.
 - **Overdue** = due time passed and the user did not mark it Done in Deadliner (Moodle does not expose submission status). The UI says this plainly.
 - **Export range:** onboarding asks for "All events" + "Recent and next 60 days"; the bot warns if the feed looks shorter.

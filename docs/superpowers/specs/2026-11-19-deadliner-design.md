@@ -153,3 +153,14 @@ Snooze button, quiet hours, month calendar view, streaks. MVP web = Upcoming lis
 ## 8. Left to the builder
 
 Package layout, exact API shapes, UI layout details, library versions, retry/back-off numbers, how the snooze is stored.
+
+## 9. Phase 2 addendum (2026-11-19): web dashboard
+
+Artem delegated the open choices to Claude. Decisions:
+
+- **Login through the bot, not the Telegram Login Widget.** `/web` in the bot sends a one-time link (`{base-url}/auth?t=…`, valid 10 minutes, single use; only its SHA-256 hash is stored). Opening it creates a server-side session (random token, SHA-256 in DB, 30 days) in an `HttpOnly; SameSite=Lax` cookie, `Secure` when the base URL is https. Why: works on localhost and before a domain exists; no Telegram widget domain setup; nothing to steal from the page. The widget needs a public HTTPS domain registered with BotFather, so it waits for deployment, if ever.
+- **One deployable.** The React app is built to static files and served by the same Spring Boot app (`/` = SPA, `/api/**` = JSON). Docker builds the frontend in its own stage.
+- **No Spring Security.** A small filter resolves the session cookie for `/api/**` and answers 401 otherwise. CSRF: `SameSite=Lax` cookie plus state-changing calls only accept `application/json` bodies or no body with a custom `X-Deadliner` header, which cross-site forms cannot send.
+- **Shared rules.** Done/undo/snooze rules move into a `DeadlineActions` service used by both the bot and the API, so they cannot drift apart.
+- **Pages (MVP):** Deadlines (overdue + next 14 days, ✅/↩️), Stats (totals + per course bars), Settings (reminder offsets, weekly plan, quiet hours, group per course), Logout. Ukrainian UI, light and dark themes, works on a phone.
+- **Not now:** calendar month view, editing anything that comes from Moodle, multiple sessions management page.

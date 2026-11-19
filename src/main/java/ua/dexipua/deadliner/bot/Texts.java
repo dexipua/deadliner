@@ -31,6 +31,7 @@ final class Texts {
     static final String STOP_CONFIRM = "Видалити всі твої дані (посилання, дедлайни, налаштування)? Це не можна скасувати.";
     static final String STOP_BUTTON = "🗑 Так, видалити";
     static final String STOPPED = "Готово, усі твої дані видалено. Щоб почати знову — /start.";
+    static final String SNOOZED = "⏰ Нагадаю ще раз о %s: %s";
     static final String DONE = "✅ Позначено як здане: %s";
     static final String DEADLINE_NOT_FOUND = "Не знайшов цей дедлайн — можливо, його вже прибрали.";
     static final String GROUP_HINT =

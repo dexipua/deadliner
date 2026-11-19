@@ -76,6 +76,11 @@ public class MessageFormatter {
         return when(d) + " — " + label(d);
     }
 
+    /** "14:00" in Kyiv time. */
+    public String time(java.time.Instant at) {
+        return DateTimeFormatter.ofPattern("HH:mm").format(at.atZone(KYIV));
+    }
+
     public String label(Deadline d) {
         if (d.getCourseName() == null) {
             return d.getTitle();

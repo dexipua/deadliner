@@ -16,9 +16,12 @@ import ua.dexipua.deadliner.user.AppUserRepository;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /** Every minute: finds due reminders and sends each user one merged message. */
@@ -35,14 +38,17 @@ public class ReminderJob {
     private final MessageFormatter formatter;
     private final Notifier notifier;
     private final Clock clock;
+    private final Snoozes snoozes;
     private final ReminderPlanner planner = new ReminderPlanner();
 
     public ReminderJob(DeadlineRepository deadlines, AppUserRepository users, ReminderSettings settings,
-                       SentReminders sentReminders, MessageFormatter formatter, Notifier notifier, Clock clock) {
+                       SentReminders sentReminders, Snoozes snoozes, MessageFormatter formatter, Notifier notifier,
+                       Clock clock) {
         this.deadlines = deadlines;
         this.users = users;
         this.settings = settings;
         this.sentReminders = sentReminders;
+        this.snoozes = snoozes;
         this.formatter = formatter;
         this.notifier = notifier;
         this.clock = clock;
@@ -68,8 +74,9 @@ public class ReminderJob {
                         .toList();
                 var sent = sentReminders.findFor(open.stream().map(Deadline::getId).toList());
                 List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now, user.isQuietHours());
-                if (!due.isEmpty()) {
-                    send(entry.getKey(), due, now);
+                Set<Long> snoozed = snoozes.dueAmong(open.stream().map(Deadline::getId).toList(), now);
+                if (!due.isEmpty() || !snoozed.isEmpty()) {
+                    send(user, open, due, snoozed, now);
                 }
             } catch (RuntimeException e) {
                 log.error("Reminders failed for user {}", entry.getKey(), e);
@@ -77,15 +84,16 @@ public class ReminderJob {
         }
     }
 
-    private void send(long userId, List<DueReminder> due, Instant now) {
-        AppUser user = users.findById(userId).orElse(null);
-        if (user == null) {
-            return;
+    private void send(AppUser user, List<Deadline> open, List<DueReminder> due, Set<Long> snoozed, Instant now) {
+        long userId = user.getId();
+        Set<Long> ids = due.stream().map(r -> r.deadline().getId()).collect(Collectors.toCollection(HashSet::new));
+        ids.addAll(snoozed);
+        List<Deadline> distinct = open.stream().filter(d -> ids.contains(d.getId())).toList();
+        List<InlineButton> buttons = new ArrayList<>();
+        for (Deadline d : distinct) {
+            buttons.add(new InlineButton("✅ Здано: " + shorten(d.getTitle()), "done:" + d.getId()));
+            buttons.add(new InlineButton("⏰ +1 година: " + shorten(d.getTitle()), "snooze:" + d.getId()));
         }
-        List<Deadline> distinct = due.stream().map(DueReminder::deadline).distinct().toList();
-        List<InlineButton> buttons = distinct.stream()
-                .map(d -> new InlineButton("✅ Здано: " + shorten(d.getTitle()), "done:" + d.getId()))
-                .toList();
         try {
             notifier.send(user.getTelegramId(), formatter.reminder(distinct), buttons);
         } catch (UserBlockedException e) {
@@ -100,6 +108,7 @@ public class ReminderJob {
         for (DueReminder r : due) {
             sentReminders.record(new SentKey(r.deadline().getId(), r.offsetMinutes(), r.deadline().getDueAt()), now);
         }
+        snoozes.delete(snoozed);
     }
 
     private static String shorten(String title) {

@@ -11,6 +11,7 @@ import ua.dexipua.deadliner.feed.FeedSyncService.ConnectResult;
 import ua.dexipua.deadliner.feed.FeedUrlValidator;
 import ua.dexipua.deadliner.reminder.MessageFormatter;
 import ua.dexipua.deadliner.reminder.ReminderSettings;
+import ua.dexipua.deadliner.reminder.Snoozes;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
 
@@ -34,15 +35,17 @@ public class CommandHandler {
     private final DeadlineRepository deadlines;
     private final ReminderSettings settings;
     private final MessageFormatter formatter;
+    private final Snoozes snoozes;
     private final Clock clock;
 
     public CommandHandler(FeedSyncService feedSync, AppUserRepository users, DeadlineRepository deadlines,
-                          ReminderSettings settings, MessageFormatter formatter, Clock clock) {
+                          ReminderSettings settings, MessageFormatter formatter, Snoozes snoozes, Clock clock) {
         this.feedSync = feedSync;
         this.users = users;
         this.deadlines = deadlines;
         this.settings = settings;
         this.formatter = formatter;
+        this.snoozes = snoozes;
         this.clock = clock;
     }
 
@@ -80,6 +83,9 @@ public class CommandHandler {
         }
         if (data.startsWith("done:")) {
             return markDone(user.get(), data.substring("done:".length()));
+        }
+        if (data.startsWith("snooze:")) {
+            return snooze(user.get(), data.substring("snooze:".length()));
         }
         if (data.startsWith("offset:")) {
             settings.toggle(user.get().getId(), Integer.parseInt(data.substring("offset:".length())));
@@ -147,15 +153,28 @@ public class CommandHandler {
                 .orElse(false);
     }
 
-    private BotReply markDone(AppUser user, String rawId) {
-        Optional<Deadline> deadline;
-        try {
-            deadline = deadlines.findById(Long.parseLong(rawId));
-        } catch (NumberFormatException e) {
-            deadline = Optional.empty();
+    private BotReply snooze(AppUser user, String rawId) {
+        Optional<Deadline> deadline = ownDeadline(user, rawId);
+        if (deadline.isEmpty() || deadline.get().getStatus() != DeadlineStatus.OPEN) {
+            return BotReply.of(Texts.DEADLINE_NOT_FOUND);
         }
-        // only the owner may mark it, whatever id the callback carries
-        if (deadline.isEmpty() || deadline.get().getUserId() != user.getId()) {
+        Instant remindAt = clock.instant().plus(Duration.ofHours(1));
+        snoozes.snooze(deadline.get().getId(), remindAt);
+        return BotReply.of(Texts.SNOOZED.formatted(formatter.time(remindAt), formatter.label(deadline.get())));
+    }
+
+    // only the owner may act on a deadline, whatever id the callback carries
+    private Optional<Deadline> ownDeadline(AppUser user, String rawId) {
+        try {
+            return deadlines.findById(Long.parseLong(rawId)).filter(d -> d.getUserId() == user.getId());
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    private BotReply markDone(AppUser user, String rawId) {
+        Optional<Deadline> deadline = ownDeadline(user, rawId);
+        if (deadline.isEmpty()) {
             return BotReply.of(Texts.DEADLINE_NOT_FOUND);
         }
         Deadline d = deadline.get();

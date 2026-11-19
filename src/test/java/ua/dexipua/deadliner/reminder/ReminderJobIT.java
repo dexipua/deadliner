@@ -29,6 +29,7 @@ class ReminderJobIT {
     @Autowired DeadlineRepository deadlines;
     @Autowired ReminderSettings settings;
     @Autowired RecordingNotifier notifier;
+    @Autowired Snoozes snoozes;
     @Autowired JdbcTemplate jdbc;
 
     @BeforeEach
@@ -61,7 +62,7 @@ class ReminderJobIT {
 
         assertThat(notifier.sent).hasSize(1);
         assertThat(notifier.sent.getFirst().text()).contains("Essay").contains("Quiz");
-        assertThat(notifier.sent.getFirst().buttons()).hasSize(2);
+        assertThat(notifier.sent.getFirst().buttons()).hasSize(4); // done + snooze per deadline
         assertThat(notifier.sent.getFirst().buttons().getFirst().callbackData()).startsWith("done:");
     }
 
@@ -74,6 +75,24 @@ class ReminderJobIT {
 
         assertThat(notifier.sent).hasSize(1);
         assertThat(jdbc.queryForObject("select count(*) from sent_reminder", Integer.class)).isEqualTo(2);
+    }
+
+    @Test
+    void snoozedDeadlineIsRemindedAgainOnce() {
+        AppUser user = new AppUser(800L, NOW);
+        user.setQuietHours(false);
+        user = users.save(user);
+        Deadline d = new Deadline(user.getId(), "snoozed");
+        d.setTitle("Lab 5");
+        d.setDueAt(NOW.plusSeconds(2 * 24 * 3600 + 3600)); // no regular reminder due now
+        d = deadlines.save(d);
+        snoozes.snooze(d.getId(), NOW.minusSeconds(30));
+
+        job.runOnce(NOW);
+        job.runOnce(NOW.plusSeconds(60));
+
+        assertThat(notifier.sent).hasSize(1);
+        assertThat(notifier.sent.getFirst().text()).contains("Lab 5");
     }
 
     @Test

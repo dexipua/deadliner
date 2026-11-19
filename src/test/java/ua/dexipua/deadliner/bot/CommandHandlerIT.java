@@ -148,6 +148,28 @@ class CommandHandlerIT {
     }
 
     @Test
+    void snoozeButtonSchedulesReminderInAnHour() {
+        handler.handle(ME, URL);
+        long id = deadline(ME, "1003@teaching.kse.org.ua").getId();
+
+        BotReply reply = handler.handleCallback(ME, "snooze:" + id);
+
+        assertThat(reply.text()).contains("15:00"); // NOW 12:00Z = 14:00 Kyiv, +1 h
+        assertThat(jdbc.queryForObject("select count(*) from snooze where deadline_id = ?", Integer.class, id)).isEqualTo(1);
+    }
+
+    @Test
+    void snoozeRefusesSomeoneElsesDeadline() {
+        handler.handle(ME, URL);
+        users.save(new AppUser(OTHER, NOW));
+        long myDeadline = deadline(ME, "1003@teaching.kse.org.ua").getId();
+
+        handler.handleCallback(OTHER, "snooze:" + myDeadline);
+
+        assertThat(jdbc.queryForObject("select count(*) from snooze", Integer.class)).isZero();
+    }
+
+    @Test
     void quietHoursCanBeTurnedOff() {
         handler.handle(ME, URL);
 

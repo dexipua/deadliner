@@ -1,6 +1,7 @@
 package ua.dexipua.deadliner.deadline;
 
 import org.springframework.stereotype.Service;
+import ua.dexipua.deadliner.reminder.QuietHours;
 import ua.dexipua.deadliner.reminder.Snoozes;
 
 import java.time.Clock;
@@ -64,6 +65,11 @@ public class DeadlineActions {
 
     /** "+1 hour", but never later than 10 minutes before the deadline: reminders stop at the deadline. */
     public SnoozeResult snooze(long userId, long deadlineId) {
+        return snooze(userId, deadlineId, null);
+    }
+
+    /** With {@code quiet} (the student's quiet hours, or null when off), a snooze that lands inside them waits for their end. */
+    public SnoozeResult snooze(long userId, long deadlineId, QuietHours quiet) {
         Optional<Deadline> deadline = own(userId, deadlineId).filter(d -> d.getStatus() == DeadlineStatus.OPEN);
         if (deadline.isEmpty()) {
             return new SnoozeResult.NotFound();
@@ -76,6 +82,9 @@ public class DeadlineActions {
                 return new SnoozeResult.TooLate();
             }
             remindAt = latest;
+        }
+        if (quiet != null && quiet.isQuiet(remindAt) && quiet.end(remindAt).isBefore(latest)) {
+            remindAt = quiet.end(remindAt);
         }
         snoozes.snooze(deadline.get().getId(), remindAt);
         return new SnoozeResult.Snoozed(remindAt);

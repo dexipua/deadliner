@@ -245,6 +245,39 @@ class CommandHandlerIT {
     }
 
     @Test
+    void forgedOffsetButtonsChangeNothing() {
+        handler.handle(ME, URL);
+
+        assertThat(handler.handleCallback(ME, "offset:abc").mode()).isEqualTo(BotReply.Mode.TOAST);
+        assertThat(handler.handleCallback(ME, "offset:5").mode()).isEqualTo(BotReply.Mode.TOAST);
+        assertThat(settings.offsets(userId(ME))).containsExactlyInAnyOrder(4320, 1440, 180);
+    }
+
+    @Test
+    void logoutEverywhereEndsAllWebSessions() {
+        handler.handle(ME, URL);
+        jdbc.update("insert into web_session (token_hash, user_id, expires_at) values ('a', ?, now() + interval '1 day'), ('b', ?, now() + interval '1 day')",
+                userId(ME), userId(ME));
+
+        BotReply reply = handler.handle(ME, "/logout");
+
+        assertThat(reply.text()).contains("2");
+        assertThat(jdbc.queryForObject("select count(*) from web_session", Integer.class)).isZero();
+    }
+
+    @Test
+    void snoozeIntoQuietHoursWaitsForTheirEnd() {
+        long id = deadlineDueIn(java.time.Duration.ofDays(3));
+        AppUser user = users.findByTelegramId(ME).orElseThrow();
+        user.setQuietWindow(new ua.dexipua.deadliner.reminder.QuietHours(13, 16)); // +1 h = 15:00 Kyiv falls inside
+        users.save(user);
+
+        BotReply reply = handler.handleCallback(ME, "snooze:" + id);
+
+        assertThat(reply.text()).contains("16:00");
+    }
+
+    @Test
     void quietHoursCanBeTurnedOff() {
         handler.handle(ME, URL);
 

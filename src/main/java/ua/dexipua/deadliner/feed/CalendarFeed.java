@@ -32,6 +32,9 @@ public class CalendarFeed {
     @Column(name = "consecutive_failures", nullable = false)
     private int consecutiveFailures;
 
+    @Column(name = "last_failed_at")
+    private Instant lastFailedAt;
+
     protected CalendarFeed() {
     }
 
@@ -74,9 +77,14 @@ public class CalendarFeed {
         consecutiveFailures = 0;
     }
 
-    public void recordFailure(String status) {
+    public void recordFailure(String status, Instant at) {
         lastStatus = status;
+        lastFailedAt = at;
         consecutiveFailures++;
+    }
+
+    public Instant getLastFailedAt() {
+        return lastFailedAt;
     }
 
     public void recordUnavailable(String status) {

@@ -12,6 +12,15 @@ class DigestScheduleTest {
     private final CronExpression cron = CronExpression.parse(DigestJob.CRON);
 
     @Test
+    void scheduleRunsInKyivTime() throws Exception {
+        var scheduled = DigestJob.class.getMethod("run")
+                .getAnnotation(org.springframework.scheduling.annotation.Scheduled.class);
+
+        assertThat(scheduled.cron()).isEqualTo(DigestJob.CRON);
+        assertThat(scheduled.zone()).isEqualTo("Europe/Kyiv");
+    }
+
+    @Test
     void firesAtSevenPmKyivOnSpringDstSunday() {
         ZonedDateTime saturday = ZonedDateTime.of(2027, 3, 27, 12, 0, 0, 0, MessageFormatter.KYIV);
 

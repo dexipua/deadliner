@@ -69,6 +69,9 @@ public class CommandHandler {
             case "/start" -> BotReply.withButtons(Texts.START,
                     List.of(List.of(new InlineButton(Texts.HELP_BUTTON, HELP_LINK))));
             case "/help" -> BotReply.of(Texts.HOW_TO_CONNECT);
+            case "/logout" -> user(telegramId)
+                    .map(u -> BotReply.of(Texts.LOGGED_OUT_EVERYWHERE.formatted(webAuth.logoutEverywhere(u.getId()))))
+                    .orElse(BotReply.of(Texts.NOT_CONNECTED));
             case "/web" -> user(telegramId)
                     .map(u -> BotReply.of(Texts.WEB_LINK.formatted(webAuth.issueLink(u.getId()))))
                     .orElse(BotReply.of(Texts.NOT_CONNECTED));
@@ -117,7 +120,11 @@ public class CommandHandler {
             return quietHoursCallback(user.get(), data);
         }
         if (data.startsWith("offset:")) {
-            settings.toggle(user.get().getId(), Integer.parseInt(data.substring("offset:".length())));
+            Integer offset = parseOffset(data.substring("offset:".length()));
+            if (offset == null) {
+                return BotReply.toast(Texts.UNKNOWN_BUTTON, null);
+            }
+            settings.toggle(user.get().getId(), offset);
         } else if (data.equals("quiet")) {
             user.get().setQuietHours(!user.get().isQuietHours());
             users.save(user.get());
@@ -244,7 +251,7 @@ public class CommandHandler {
     }
 
     private BotReply snooze(AppUser user, String rawId) {
-        return switch (actions.snooze(user.getId(), parseId(rawId))) {
+        return switch (actions.snooze(user.getId(), parseId(rawId), user.isQuietHours() ? user.getQuietWindow() : null)) {
             case DeadlineActions.SnoozeResult.Snoozed s -> BotReply.toast(Texts.SNOOZED.formatted(formatter.time(s.remindAt())), null);
             case DeadlineActions.SnoozeResult.TooLate t -> BotReply.toast(Texts.SNOOZE_TOO_LATE, null);
             case DeadlineActions.SnoozeResult.NotFound n -> BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
@@ -261,6 +268,16 @@ public class CommandHandler {
         return actions.undo(user.getId(), parseId(rawId))
                 .map(d -> BotReply.toast(Texts.UNDONE.formatted(formatter.toastLabel(d)), d.getId()))
                 .orElse(BotReply.toast(Texts.DEADLINE_NOT_FOUND, null));
+    }
+
+    /** Only the three offsets the settings screen offers; anything else came from a forged button. */
+    private static Integer parseOffset(String raw) {
+        try {
+            int offset = Integer.parseInt(raw);
+            return ReminderSettings.DEFAULT_OFFSETS.contains(offset) ? offset : null;
+        } catch (NumberFormatException e) {
+            return null;
+        }
     }
 
     // a malformed id from an old or forged button simply matches nothing

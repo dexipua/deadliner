@@ -91,8 +91,7 @@ public class ReminderJob {
         try {
             notifier.send(user.getTelegramId(), formatter.reminder(distinct, now), formatter.reminderButtons(distinct));
         } catch (UserBlockedException e) {
-            user.setActive(false);
-            users.save(user);
+            users.deactivate(user.getId());
             return;
         } catch (RuntimeException e) {
             // not recorded as sent, so the next run retries while the reminder is still in the grace window

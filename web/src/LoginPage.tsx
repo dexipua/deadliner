@@ -26,6 +26,7 @@ export function LoginPage() {
           </a>
         )}
         <p className="fine muted">Без паролів: посилання одноразове й діє 10 хвилин.</p>
+        <p className="fine muted">Відкрилось усередині Telegram? Натисни ⋮ → «Відкрити в браузері», щоб лишитися в системі.</p>
       </div>
     </div>
   );

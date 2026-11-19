@@ -30,7 +30,7 @@ public final class FeedUrlValidator {
         } catch (URISyntaxException e) {
             return Optional.empty();
         }
-        if (!"https".equals(uri.getScheme()) || !HOST.equals(uri.getHost())
+        if (!"https".equals(uri.getScheme()) || !HOST.equalsIgnoreCase(uri.getHost())
                 || uri.getPort() != -1 || !PATH.equals(uri.getPath())) {
             return Optional.empty();
         }

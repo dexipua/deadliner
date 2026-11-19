@@ -10,7 +10,7 @@
   <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21">
   <img src="https://img.shields.io/badge/Spring_Boot-4.1-6db33f" alt="Spring Boot 4.1">
   <img src="https://img.shields.io/badge/React-19-61dafb" alt="React 19">
-  <img src="https://img.shields.io/badge/tests-175-brightgreen" alt="175 tests">
+  <img src="https://img.shields.io/badge/tests-183-brightgreen" alt="183 tests">
 </p>
 
 <p align="center">
@@ -42,6 +42,7 @@ Paste your Moodle calendar link into the bot once. Then Deadliner:
 | `/group` | Your seminar group in each course |
 | `/settings` | Reminder times, weekly plan, quiet hours |
 | `/web` | A login link for the web dashboard |
+| `/logout` | End all web dashboard sessions |
 | `/stop` | Delete all your data |
 
 <p align="center">
@@ -77,7 +78,7 @@ A few decisions worth a look (details in [the design doc](docs/superpowers/specs
 
 **Backend:** Java 21, Spring Boot 4.1, Spring MVC, Spring Data JPA, PostgreSQL 16, Flyway, ical4j, TelegramBots 10<br>
 **Frontend:** React 19, TypeScript, Vite<br>
-**Quality:** 175 tests — JUnit 5, AssertJ, Mockito, Testcontainers (real PostgreSQL), MockMvc; two independent code reviews; GitHub Actions<br>
+**Quality:** 183 tests — JUnit 5, AssertJ, Mockito, Testcontainers (real PostgreSQL), MockMvc; two independent code reviews; GitHub Actions<br>
 **Ops:** Docker multi-stage image (bot + API + dashboard), Docker Compose with daily `pg_dump` backups
 
 ## Run it
@@ -108,6 +109,6 @@ docs/         design, plans, deploy guide, screenshots, brand
 
 ## Status
 
-Version 1.2.0 — see the [changelog](CHANGELOG.md). Next: hosting it for classmates.
+Version 1.3.0 — see the [changelog](CHANGELOG.md). Next: hosting it for classmates.
 
 Made by [Artem Moseichenko](https://www.linkedin.com/in/artem-moseichenko/) · [portfolio](https://dexipua.github.io/)

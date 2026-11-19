@@ -27,8 +27,8 @@ public class ReminderPlanner {
     }
 
     /**
-     * With {@code quietHours}, a reminder that falls between 23:00 and 08:00 Kyiv time is moved to 08:00,
-     * unless the deadline itself comes before 08:00; then it goes out on time.
+     * With {@code quietHours}, a reminder that falls inside them is moved to their end, or, when the deadline
+     * comes before that, to their start.
      */
     public List<DueReminder> plan(List<Deadline> open, Set<Integer> offsets, Set<SentKey> alreadySent, Instant now,
                                   boolean quietHours) {
@@ -46,8 +46,10 @@ public class ReminderPlanner {
             }
             for (int offset : offsets) {
                 Instant onTime = d.getDueAt().minus(Duration.ofMinutes(offset));
-                Instant morning = window.isQuiet(onTime) && window.end(onTime).isBefore(d.getDueAt())
-                        ? window.end(onTime) : onTime;
+                // inside quiet hours: wait for their end, or, if that is too late for the deadline,
+                // send it just as they begin instead of in the middle of the night
+                Instant morning = !window.isQuiet(onTime) ? onTime
+                        : window.end(onTime).isBefore(d.getDueAt()) ? window.end(onTime) : window.start(onTime);
                 // with quiet hours off, a reminder held overnight while they were on still goes out at 08:00
                 boolean inWindow = inWindow(morning, windowStart, now) || (!quietHours && inWindow(onTime, windowStart, now));
                 if (inWindow && !alreadySent.contains(new SentKey(d.getId(), offset, d.getDueAt()))) {

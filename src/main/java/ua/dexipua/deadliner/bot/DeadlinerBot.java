@@ -123,14 +123,22 @@ public class DeadlinerBot implements LongPollingUpdateConsumer {
         List<InlineKeyboardRow> rows = markup.getKeyboard().stream()
                 .map(row -> new InlineKeyboardRow(row.stream()
                         .filter(b -> !("snooze:" + deadlineId).equals(b.getCallbackData()))
-                        .map(b -> {
+                        .flatMap(b -> {
                             if (done.equals(b.getCallbackData())) {
-                                return button(b.getText().replace("✅", "↩️").replace("Здано", "Скасувати"), undo);
+                                return java.util.stream.Stream.of(
+                                        button(b.getText().replace("✅", "↩️").replace("Здано", "Скасувати"), undo));
                             }
                             if (undo.equals(b.getCallbackData())) {
-                                return button(b.getText().replace("↩️", "✅").replace("Скасувати", "Здано"), done);
+                                InlineKeyboardButton back = button(b.getText().replace("↩️", "✅").replace("Скасувати", "Здано"), done);
+                                if (!b.getText().contains("Скасувати")) {
+                                    return java.util.stream.Stream.of(back); // a numbered /deadlines button
+                                }
+                                // a reminder: "↩️ 1. Скасувати" -> "✅ 1. Здано" + "⏰ 1. +1 год"
+                                String number = b.getText().replace("↩️", "").replace("Скасувати", "").strip();
+                                String snoozeLabel = "⏰ " + (number.isEmpty() ? "" : number + " ") + "+1 год";
+                                return java.util.stream.Stream.of(back, button(snoozeLabel, "snooze:" + deadlineId));
                             }
-                            return b;
+                            return java.util.stream.Stream.of(b);
                         })
                         .toList()))
                 .filter(row -> !row.isEmpty())

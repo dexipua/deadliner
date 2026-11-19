@@ -87,10 +87,20 @@ class ReminderPlannerTest {
     }
 
     @Test
-    void urgentReminderIsSentAtNightAnyway() {
-        Deadline d = deadline(1, Instant.parse("2026-11-20T01:00:00Z")); // 03:00 Kyiv, before quiet hours end
+    void urgentReminderComesBeforeQuietHoursInsteadOfAtNight() {
+        Deadline d = deadline(1, Instant.parse("2026-11-20T01:00:00Z")); // 03:00 Kyiv, before quiet hours end; 3 h reminder at 00:00
 
-        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-19T22:00:30Z"), true))
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-19T22:00:30Z"), true)).isEmpty();
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-19T21:00:30Z"), true))
+                .containsExactly(new DueReminder(d, 180)); // 23:00 Kyiv, as quiet hours begin
+    }
+
+    @Test
+    void deadlineExactlyWhenQuietHoursEndIsRemindedTheEveningBefore() {
+        Deadline d = deadline(1, Instant.parse("2026-11-21T06:00:00Z")); // 08:00 Kyiv; 3 h reminder would be 05:00
+
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-21T03:00:30Z"), true)).isEmpty();
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-20T21:00:30Z"), true))
                 .containsExactly(new DueReminder(d, 180));
     }
 

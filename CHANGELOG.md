@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.3.0 — 2026-11-19
+
+Polish from the code reviews.
+
+- Reminders that would land in quiet hours but are due before they end now come as quiet hours begin (e.g. 23:00), not in the middle of the night; a deadline exactly at 08:00 is reminded the evening before.
+- "+1 год" respects quiet hours; "Скасувати" brings back the "+1 год" button in reminders.
+- `/logout` ends every web dashboard session; the /web message explains Telegram's in-app browser.
+- A dead Moodle link is retried every 6 hours instead of every 30 minutes after the warning.
+- Forged settings buttons are ignored; the Moodle host check ignores letter case; deactivating a user no longer overwrites settings saved at the same moment.
+- 183 tests.
+
 ## 1.2.0 — 2026-11-19
 
 - Quiet hours are now yours to choose: any two whole hours in Kyiv time, across midnight (22–07) or within a day (13–15 during classes). In the bot: /settings → "🕒 Змінити час" (start, then end, edited in place); in the dashboard: "З" and "до" next to the switch. Default stays 23:00–08:00.

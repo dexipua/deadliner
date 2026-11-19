@@ -59,11 +59,18 @@ class DeadlinerBotTest {
     }
 
     @Test
-    void undoBecomesDoneAgain() {
+    void undoInReminderBringsBackDoneAndSnooze() {
         var markup = TelegramNotifier.keyboard(List.of(List.of(new InlineButton("↩️ 1. Скасувати", "undo:7"))));
 
         assertThat(callbacks(DeadlinerBot.toggleDone(markup, 7)))
-                .containsExactly(List.of("✅ 1. Здано|done:7"));
+                .containsExactly(List.of("✅ 1. Здано|done:7", "⏰ 1. +1 год|snooze:7"));
+    }
+
+    @Test
+    void undoInListBringsBackOnlyTheNumber() {
+        var markup = TelegramNotifier.keyboard(List.of(List.of(new InlineButton("↩️ 2", "undo:7"))));
+
+        assertThat(callbacks(DeadlinerBot.toggleDone(markup, 7))).containsExactly(List.of("✅ 2|done:7"));
     }
 
     @Test

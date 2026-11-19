@@ -29,6 +29,12 @@ class FeedUrlValidatorTest {
         assertThat(FeedUrlValidator.normalize(webcal)).contains(URI.create(VALID));
     }
 
+    @Test
+    void hostIsCaseInsensitive() {
+        String upper = VALID.replace("teaching.kse.org.ua", "Teaching.KSE.org.ua");
+        assertThat(FeedUrlValidator.normalize(upper)).isPresent();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {
             "http://teaching.kse.org.ua/calendar/export_execute.php?userid=42&authtoken=abc123",

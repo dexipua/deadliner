@@ -60,8 +60,7 @@ public class DigestJob {
         try {
             notifier.send(user.getTelegramId(), text, List.of());
         } catch (UserBlockedException e) {
-            user.setActive(false);
-            users.save(user);
+            users.deactivate(user.getId());
         } catch (RuntimeException e) {
             log.warn("Could not send digest to user {}: {}", user.getId(), e.getMessage());
         }

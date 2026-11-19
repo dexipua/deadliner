@@ -125,7 +125,7 @@ public class FeedSyncService {
             });
         } catch (FeedRejectedException | InvalidFeedException e) {
             // never log the URL: it contains the user's token
-            feed.recordFailure(e.getClass().getSimpleName() + ": " + e.getMessage());
+            feed.recordFailure(e.getClass().getSimpleName() + ": " + e.getMessage(), now);
             feeds.save(feed);
             return new SyncOutcome.Failed(feed.getConsecutiveFailures());
         } catch (IOException e) {

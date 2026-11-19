@@ -22,6 +22,7 @@ public class FeedSyncJob {
 
     /** Warn the user once, on exactly this many failures in a row. */
     static final int WARN_AFTER_FAILURES = 3;
+    static final java.time.Duration DEAD_LINK_RETRY = java.time.Duration.ofHours(6);
     static final String BROKEN_LINK_TEXT =
             "⚠️ Посилання на календар Moodle перестало працювати. Надішли мені нове посилання — інструкція в /start.";
 
@@ -47,6 +48,9 @@ public class FeedSyncJob {
 
     public void runOnce(Instant now) {
         for (CalendarFeed feed : feeds.findAllOfActiveUsers()) {
+            if (resting(feed, now)) {
+                continue;
+            }
             // one broken feed (or a user who just hit /stop) must not stop the sync for everyone else
             try {
                 SyncOutcome outcome = service.sync(feed.getId(), now);
@@ -59,6 +63,12 @@ public class FeedSyncJob {
         }
     }
 
+    /** After the warning a dead link is polled every 6 hours, not every 30 minutes, until it works again. */
+    private static boolean resting(CalendarFeed feed, Instant now) {
+        return feed.getConsecutiveFailures() >= WARN_AFTER_FAILURES && feed.getLastFailedAt() != null
+                && feed.getLastFailedAt().isAfter(now.minus(DEAD_LINK_RETRY));
+    }
+
     private void warn(long userId) {
         AppUser user = users.findById(userId).orElse(null);
         if (user == null) {
@@ -67,8 +77,7 @@ public class FeedSyncJob {
         try {
             notifier.send(user.getTelegramId(), BROKEN_LINK_TEXT, List.of());
         } catch (UserBlockedException e) {
-            user.setActive(false);
-            users.save(user);
+            users.deactivate(user.getId());
         } catch (RuntimeException e) {
             log.warn("Could not warn user {} about a broken link: {}", userId, e.getMessage());
         }

@@ -94,6 +94,11 @@ public class WebAuthService {
         jdbc.sql("delete from web_session where token_hash = ?").param(hash(sessionToken)).update();
     }
 
+    /** "Log out everywhere": ends every dashboard session of this user; returns how many there were. */
+    public int logoutEverywhere(long userId) {
+        return jdbc.sql("delete from web_session where user_id = ?").param(userId).update();
+    }
+
     /** Daily: forget links and sessions that expired more than a day ago. */
     @Scheduled(cron = "0 30 4 * * *", zone = "Europe/Kyiv")
     public void cleanUp() {

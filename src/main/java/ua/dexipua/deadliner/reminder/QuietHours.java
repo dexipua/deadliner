@@ -37,6 +37,16 @@ public record QuietHours(int startHour, int endHour) {
         return end.toInstant();
     }
 
+    /** The start of the quiet period that contains {@code at}. */
+    public Instant start(Instant at) {
+        ZonedDateTime kyiv = at.atZone(MessageFormatter.KYIV);
+        ZonedDateTime start = kyiv.with(LocalTime.of(startHour, 0));
+        if (crossesMidnight() && kyiv.getHour() < endHour) {
+            start = start.minusDays(1);
+        }
+        return start.toInstant();
+    }
+
     /** "23:00–08:00". */
     public String label() {
         return String.format("%02d:00–%02d:00", startHour, endHour);

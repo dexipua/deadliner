@@ -260,6 +260,22 @@ class FeedSyncServiceIT {
     }
 
     @Test
+    void deadLinkIsRetriedEverySixHoursNotEveryHalfHour() {
+        service.connect(TG, URL);
+        fetcher.bodies.put(URI.create(URL), "Invalid authentication");
+        for (int i = 0; i < 3; i++) {
+            job.runOnce(NOW);
+        }
+        fetcher.bodies.put(URI.create(URL), StubFeedFetcher.fixture()); // the link works again
+
+        job.runOnce(NOW.plus(java.time.Duration.ofHours(1)));
+        assertThat(feeds.findById(feedId()).orElseThrow().getConsecutiveFailures()).isEqualTo(3);
+
+        job.runOnce(NOW.plus(java.time.Duration.ofHours(7)));
+        assertThat(feeds.findById(feedId()).orElseThrow().getConsecutiveFailures()).isZero();
+    }
+
+    @Test
     void jobMarksBlockedUserInactive() {
         service.connect(TG, URL);
         fetcher.bodies.put(URI.create(URL), "Invalid authentication");

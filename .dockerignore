@@ -1,0 +1,5 @@
+backups/
+target/
+.git/
+.superpowers/
+.env

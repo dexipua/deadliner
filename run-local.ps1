@@ -12,5 +12,13 @@ Get-Content .env | Where-Object { $_ -match '^\s*[A-Z_]+=' } | ForEach-Object {
 $jdk = Join-Path $HOME '.local\java\jdk-21.0.13+9'
 if (Test-Path $jdk) { $env:JAVA_HOME = $jdk }
 
+# build the web dashboard once (or after `git pull`, delete src/main/resources/static to rebuild)
+if (-not (Test-Path src/main/resources/static/index.html)) {
+    Push-Location web
+    npm ci --no-audit --no-fund
+    npm run build
+    Pop-Location
+}
+
 docker compose up -d
 .\mvnw.cmd -q spring-boot:run

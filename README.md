@@ -12,7 +12,11 @@ You paste your Moodle calendar link once. Deadliner then:
 - keeps **quiet hours** (23:00–08:00): night reminders arrive at 08:00 in one message, unless the deadline is before that;
 - shows `/stats`: handed in on time, late, overdue and upcoming, per course.
 
-**Version 1.0.0** — the Telegram bot. Next: a web dashboard (see [CHANGELOG](CHANGELOG.md)).
+**Version 1.1.0** — the Telegram bot and a web dashboard (see [CHANGELOG](CHANGELOG.md)).
+
+### Web dashboard
+
+Send `/web` to the bot: it answers with a one-time link (10 minutes, single use). Opening it logs you in, with no password. The dashboard shows your deadlines (tick ✅ / untick), stats per course, and settings: reminder times, the weekly plan, quiet hours and your group in each course.
 
 | Command | What it does |
 |---|---|
@@ -21,6 +25,7 @@ You paste your Moodle calendar link once. Deadliner then:
 | `/stats` | On time / late / overdue / upcoming, per course |
 | `/group` | Your seminar group in each course |
 | `/settings` | Reminder times, weekly plan, quiet hours |
+| `/web` | A login link for the web dashboard |
 | `/stop` | Delete all your data |
 
 <!-- TODO: GIF of the bot -->
@@ -51,7 +56,7 @@ Java 21 · Spring Boot 4.1 · Spring Data JPA · PostgreSQL 16 · Flyway · ical
 
 ## Run locally
 
-Requirements: JDK 21 and Docker.
+Requirements: JDK 21, Node 22 and Docker. `run-local.ps1` builds the dashboard once, starts PostgreSQL and the app; the dashboard is at http://127.0.0.1:8080. For frontend work, `cd web; npm run dev` serves it with hot reload on :5173.
 
 ```bash
 cp .env.example .env              # fill in TELEGRAM_BOT_TOKEN and DEADLINER_FEED_KEY

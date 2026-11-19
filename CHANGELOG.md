@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.1.0 — 2026-11-19
+
+Web dashboard.
+
+- `/web` in the bot sends a one-time login link (10 minutes, single use). No passwords; links and sessions are random tokens stored as SHA-256 hashes; HttpOnly, SameSite=Lax cookie, Secure on https; CSRF header on every change.
+- Pages: Deadlines (recent overdue + next 14 days, tick/untick), Stats (totals and per course), Settings (reminder times, weekly plan, quiet hours, group per course). Kyiv time, light and dark theme, phone-friendly.
+- REST API under `/api`, sharing the bot's rules (`DeadlineActions`, group filter).
+- One Docker image serves the bot, the API and the dashboard; CI also builds the frontend.
+
 ## 1.0.0 — 2026-11-19
 
 First version: the Telegram bot.
@@ -25,5 +34,4 @@ First version: the Telegram bot.
 - 139 tests (unit + integration on PostgreSQL via Testcontainers), CI on GitHub Actions, Docker image and production compose with daily backups.
 
 ## Next
-- Web dashboard (phase 2): login through the bot, upcoming list, stats and settings in the browser.
-- Deploy to a server and invite classmates.
+- Deploy to a server with HTTPS and invite classmates.

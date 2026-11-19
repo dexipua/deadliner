@@ -35,6 +35,19 @@ docker compose -f compose.prod.yaml logs -f app
 
 Check: send `/start` to the bot.
 
+## 3a. HTTPS for the web dashboard
+
+The app listens on `127.0.0.1:8080` only. Put a reverse proxy with HTTPS in front, for example Caddy, which gets the certificate by itself:
+
+```
+# /etc/caddy/Caddyfile
+deadliner.example.com {
+    reverse_proxy 127.0.0.1:8080
+}
+```
+
+Then set `DEADLINER_WEB_URL=https://deadliner.example.com` in `.env` and restart the app: `/web` links point there, and the session cookie becomes `Secure`.
+
 ## 4. Backups
 
 The `backup` service writes `backups/deadliner-YYYY-MM-DD.dump` once a day and keeps 14 days. Copy them off the server now and then.

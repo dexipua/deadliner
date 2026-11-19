@@ -7,6 +7,9 @@ services:
     env_file: .env
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/deadliner
+    # web dashboard; only reachable from the server itself, put a reverse proxy with HTTPS in front
+    ports:
+      - "127.0.0.1:8080:8080"
     depends_on:
       postgres:
         condition: service_healthy

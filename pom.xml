@@ -13,7 +13,7 @@
 
     <groupId>ua.dexipua</groupId>
     <artifactId>deadliner</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>1.0.0</version>
     <name>deadliner</name>
     <description>Telegram bot that reminds KSE students about Moodle deadlines</description>
 

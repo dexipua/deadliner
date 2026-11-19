@@ -6,13 +6,22 @@ You paste your Moodle calendar link once. Deadliner then:
 
 - reminds you **3 days, 1 day and 3 hours** before each deadline (you can change this);
 - sends a **plan for the week** every Sunday at 19:00;
-- shows what is due in the next 7 days with `/deadlines`;
-- lets you tap **✅ Done** under a reminder so it stops reminding you, or **⏰ +1 hour** to be reminded again later;
+- shows what is due in the next 7 days with `/deadlines`, plus anything overdue from the last 14 days;
+- lets you tap **✅ Done** (under a reminder or in `/deadlines`) so it stops reminding you, **↩️ Undo** if you tapped it by mistake, or **⏰ +1 hour** to be reminded again later;
 - hides quizzes of other seminar groups: `/group` lets you pick your group in each course with buttons;
 - keeps **quiet hours** (23:00–08:00): night reminders arrive at 08:00 in one message, unless the deadline is before that;
 - shows `/stats`: handed in on time, late, overdue and upcoming, per course.
 
-> Phase 1 (this repo): the bot. Phase 2: a web dashboard with Telegram login and stats.
+**Version 1.0.0** — the Telegram bot. Next: a web dashboard (see [CHANGELOG](CHANGELOG.md)).
+
+| Command | What it does |
+|---|---|
+| `/start`, `/help` | How to connect your Moodle calendar |
+| `/deadlines` | The next 7 days and recent overdue, with ✅ buttons |
+| `/stats` | On time / late / overdue / upcoming, per course |
+| `/group` | Your seminar group in each course |
+| `/settings` | Reminder times, weekly plan, quiet hours |
+| `/stop` | Delete all your data |
 
 <!-- TODO: GIF of the bot -->
 

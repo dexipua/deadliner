@@ -40,6 +40,15 @@ public class ReminderSettings {
         }
     }
 
+    /** Sets exactly these offsets (each must be one of {@link #DEFAULT_OFFSETS}). */
+    @org.springframework.transaction.annotation.Transactional
+    public void replace(long userId, Set<Integer> offsets) {
+        jdbc.sql("delete from reminder_setting where user_id = ?").param(userId).update();
+        for (int offset : offsets) {
+            jdbc.sql("insert into reminder_setting (user_id, offset_minutes) values (?, ?)").params(userId, offset).update();
+        }
+    }
+
     public Set<Integer> offsets(long userId) {
         return new TreeSet<>(jdbc.sql("select offset_minutes from reminder_setting where user_id = ?")
                 .param(userId)

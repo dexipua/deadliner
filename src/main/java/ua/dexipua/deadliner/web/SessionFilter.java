@@ -24,6 +24,7 @@ public class SessionFilter extends OncePerRequestFilter {
     public static final String COOKIE = "dl_session";
     public static final String USER_ID = "deadliner.userId";
     static final String CSRF_HEADER = "X-Deadliner";
+    static final String LOGOUT = "/api/logout";
 
     private final WebAuthService auth;
 
@@ -39,17 +40,19 @@ public class SessionFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
+        boolean changesData = !"GET".equals(request.getMethod()) && !"HEAD".equals(request.getMethod());
         Optional<Long> userId = sessionToken(request).flatMap(auth::userFor);
-        if (userId.isEmpty()) {
+        // logging out works even with an expired session, so the stale cookie still gets cleared
+        boolean logout = LOGOUT.equals(request.getRequestURI());
+        if (userId.isEmpty() && !logout) {
             reject(response, HttpServletResponse.SC_UNAUTHORIZED, "unauthorized");
             return;
         }
-        boolean changesData = !"GET".equals(request.getMethod()) && !"HEAD".equals(request.getMethod());
         if (changesData && request.getHeader(CSRF_HEADER) == null) {
             reject(response, HttpServletResponse.SC_FORBIDDEN, "missing " + CSRF_HEADER + " header");
             return;
         }
-        request.setAttribute(USER_ID, userId.get());
+        userId.ifPresent(id -> request.setAttribute(USER_ID, id));
         chain.doFilter(request, response);
     }
 

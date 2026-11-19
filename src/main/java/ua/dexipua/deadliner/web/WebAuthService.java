@@ -1,6 +1,8 @@
 package ua.dexipua.deadliner.web;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +38,11 @@ public class WebAuthService {
         this.jdbc = jdbc;
         this.clock = clock;
         this.baseUrl = baseUrl.endsWith("/") ? baseUrl.substring(0, baseUrl.length() - 1) : baseUrl;
+        if (!isHttps()) {
+            LoggerFactory.getLogger(WebAuthService.class).warn(
+                    "Web dashboard URL is {} (not https). Fine on your own computer; in production set DEADLINER_WEB_URL.",
+                    this.baseUrl);
+        }
     }
 
     public boolean isHttps() {
@@ -85,6 +92,14 @@ public class WebAuthService {
 
     public void logout(String sessionToken) {
         jdbc.sql("delete from web_session where token_hash = ?").param(hash(sessionToken)).update();
+    }
+
+    /** Daily: forget links and sessions that expired more than a day ago. */
+    @Scheduled(cron = "0 30 4 * * *", zone = "Europe/Kyiv")
+    public void cleanUp() {
+        Timestamp before = Timestamp.from(clock.instant().minus(Duration.ofDays(1)));
+        jdbc.sql("delete from web_login_token where expires_at < ?").param(before).update();
+        jdbc.sql("delete from web_session where expires_at < ?").param(before).update();
     }
 
     private String newToken() {

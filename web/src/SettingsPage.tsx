@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api, type Me } from "./api";
 import { useLoad } from "./App";
 
@@ -9,20 +9,29 @@ const OFFSETS = [
 ];
 
 export function SettingsPage({ onUnauthorized }: { onUnauthorized: () => void }) {
-  const { data, setData, error, setError } = useLoad(api.me, onUnauthorized);
+  const { data, setData, error, reload } = useLoad(api.me, onUnauthorized);
   const [saved, setSaved] = useState(false);
+  const [problem, setProblem] = useState<string | null>(null);
+  const latest = useRef(0);
 
   if (error) return <p className="notice">{error}</p>;
   if (!data) return <p className="muted">Завантаження…</p>;
 
   const save = async (next: Me) => {
-    setData(next); // feels instant; the server answer replaces it
+    const request = ++latest.current;
+    setData(next); // feels instant; the server answer confirms it
+    setProblem(null);
     try {
-      setData(await api.saveSettings({ offsets: next.offsets, digestEnabled: next.digestEnabled, quietHours: next.quietHours }));
-      setSaved(true);
-      window.setTimeout(() => setSaved(false), 1500);
+      const answer = await api.saveSettings({ offsets: next.offsets, digestEnabled: next.digestEnabled, quietHours: next.quietHours });
+      // a slower answer to an older click must not undo a newer one
+      if (request === latest.current) {
+        setData(answer);
+        setSaved(true);
+        window.setTimeout(() => setSaved(false), 1500);
+      }
     } catch (e) {
-      setError(String((e as Error).message));
+      setProblem(`Не вдалося зберегти: ${(e as Error).message}`);
+      reload(); // show what is really saved
     }
   };
 
@@ -33,10 +42,11 @@ export function SettingsPage({ onUnauthorized }: { onUnauthorized: () => void })
     });
 
   const setGroup = async (key: string, value: string) => {
+    setProblem(null);
     try {
       setData(await api.setGroup(key, value === "" ? null : Number(value)));
     } catch (e) {
-      setError(String((e as Error).message));
+      setProblem(`Не вдалося зберегти групу: ${(e as Error).message}`);
     }
   };
 
@@ -46,6 +56,7 @@ export function SettingsPage({ onUnauthorized }: { onUnauthorized: () => void })
         <h1>Налаштування</h1>
         <p className="muted" aria-live="polite">{saved ? "Збережено ✓" : "Зміни зберігаються одразу."}</p>
       </div>
+      {problem && <p className="notice" role="alert">{problem}</p>}
 
       <section className="group">
         <h2>Нагадування</h2>

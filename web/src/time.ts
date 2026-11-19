@@ -17,7 +17,8 @@ export function time(iso: string): string {
 /** "Сьогодні", "Завтра" or "пт, 20 листопада". */
 export function dayName(key: string, now = new Date()): string {
   const today = dayKey(now);
-  const tomorrow = dayKey(new Date(now.getTime() + 24 * 3600 * 1000));
+  // from the Kyiv date itself, so DST days (23 or 25 hours) don't shift "tomorrow"
+  const tomorrow = dayKey(new Date(Date.parse(`${today}T12:00:00Z`) + 24 * 3600 * 1000));
   if (key === today) return "Сьогодні";
   if (key === tomorrow) return "Завтра";
   const label = dayFormat.format(new Date(`${key}T12:00:00Z`));

@@ -154,6 +154,40 @@ class ApiIT {
     }
 
     @Test
+    void nullOffsetIsRejected() throws Exception {
+        mvc.perform(change(put("/api/settings")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"offsets\":[null],\"digestEnabled\":true,\"quietHours\":true}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void missingSwitchIsRejectedNotTurnedOff() throws Exception {
+        mvc.perform(change(put("/api/settings")).contentType(MediaType.APPLICATION_JSON).content("{\"offsets\":[1440]}"))
+                .andExpect(status().isBadRequest());
+        assertThat(users.findById(me).orElseThrow().isQuietHours()).isTrue();
+    }
+
+    @Test
+    void fastParallelSettingsSavesDoNotFail() throws Exception {
+        var pool = java.util.concurrent.Executors.newFixedThreadPool(4);
+        try {
+            var results = new java.util.ArrayList<java.util.concurrent.Future<Integer>>();
+            for (int i = 0; i < 8; i++) {
+                String body = i % 2 == 0
+                        ? "{\"offsets\":[4320,1440],\"digestEnabled\":true,\"quietHours\":true}"
+                        : "{\"offsets\":[180],\"digestEnabled\":false,\"quietHours\":false}";
+                results.add(pool.submit(() -> mvc.perform(change(put("/api/settings"))
+                        .contentType(MediaType.APPLICATION_JSON).content(body)).andReturn().getResponse().getStatus()));
+            }
+            for (var r : results) {
+                assertThat(r.get()).isEqualTo(200);
+            }
+        } finally {
+            pool.shutdown();
+        }
+    }
+
+    @Test
     void groupIsSetAndCleared() throws Exception {
         add(me, MATH, "Квіз · Група 7", Duration.ofDays(1));
         String key = GroupFilter.courseKey(MATH);

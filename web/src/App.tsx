@@ -61,8 +61,10 @@ export function App() {
 export function useLoad<T>(load: () => Promise<T>, onUnauthorized: () => void) {
   const [data, setData] = useState<T | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const reload = () =>
-    load().then(setData, (e) => (e instanceof Unauthorized ? onUnauthorized() : setError(String(e.message ?? e))));
+  const reload = () => {
+    setError(null);
+    return load().then(setData, (e) => (e instanceof Unauthorized ? onUnauthorized() : setError(String(e.message ?? e))));
+  };
   useEffect(() => {
     reload();
     // eslint-disable-next-line react-hooks/exhaustive-deps

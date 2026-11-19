@@ -1,6 +1,7 @@
 package ua.dexipua.deadliner.web;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -137,12 +138,17 @@ public class ApiController {
     }
 
     @PutMapping("/settings")
+    @Transactional
     public Me settings(@RequestAttribute(SessionFilter.USER_ID) long userId, @RequestBody SettingsRequest request) {
-        Set<Integer> offsets = new HashSet<>(request.offsets() == null ? List.of() : request.offsets());
+        if (request.offsets() == null || request.offsets().contains(null)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "offsets must be a list of minutes");
+        }
+        Set<Integer> offsets = new HashSet<>(request.offsets());
         if (!ReminderSettings.DEFAULT_OFFSETS.containsAll(offsets)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown reminder offset");
         }
-        AppUser user = users.findById(userId).orElseThrow(ApiController::notFound);
+        // the row lock makes two fast saves run one after another instead of colliding
+        AppUser user = users.lockById(userId).orElseThrow(ApiController::notFound);
         settings.replace(userId, offsets);
         user.setDigestEnabled(request.digestEnabled());
         user.setQuietHours(request.quietHours());

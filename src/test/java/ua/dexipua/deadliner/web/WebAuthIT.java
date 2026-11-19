@@ -110,6 +110,33 @@ class WebAuthIT {
     }
 
     @Test
+    void logoutWithExpiredSessionStillClearsCookie() throws Exception {
+        MvcResult result = mvc.perform(post("/api/logout").cookie(new Cookie(SessionFilter.COOKIE, "stale"))
+                        .header("X-Deadliner", "1"))
+                .andExpect(status().isNoContent()).andReturn();
+        assertThat(result.getResponse().getHeader("Set-Cookie")).contains("Max-Age=0");
+    }
+
+    @Test
+    void pagesCannotBeFramed() throws Exception {
+        mvc.perform(get("/public/info")).andExpect(header().string("X-Frame-Options", "DENY"));
+        mvc.perform(get("/api/me")).andExpect(header().string("X-Frame-Options", "DENY"));
+    }
+
+    @Test
+    void oldLinksAndSessionsAreCleanedUp() throws Exception {
+        login();
+        auth.issueLink(userId);
+        jdbc.update("update web_login_token set expires_at = now() - interval '2 days'");
+        jdbc.update("update web_session set expires_at = now() - interval '2 days'");
+
+        auth.cleanUp();
+
+        assertThat(jdbc.queryForObject("select count(*) from web_login_token", Integer.class)).isZero();
+        assertThat(jdbc.queryForObject("select count(*) from web_session", Integer.class)).isZero();
+    }
+
+    @Test
     void sessionOfDeletedUserIsGone() throws Exception {
         Cookie session = login();
         users.deleteById(userId);

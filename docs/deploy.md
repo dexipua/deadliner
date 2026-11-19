@@ -48,6 +48,8 @@ deadliner.example.com {
 
 Then set `DEADLINER_WEB_URL=https://deadliner.example.com` in `.env` and restart the app: `/web` links point there, and the session cookie becomes `Secure`.
 
+Notes: if `DEADLINER_WEB_URL` is left at the local default, `/web` links point to the server itself and the app logs a warning at start. The proxy's access log will contain `/auth?t=…`; those links are single-use and expire in 10 minutes, so that is harmless, but don't share the logs.
+
 ## 4. Backups
 
 The `backup` service writes `backups/deadliner-YYYY-MM-DD.dump` once a day and keeps 14 days. Copy them off the server now and then.

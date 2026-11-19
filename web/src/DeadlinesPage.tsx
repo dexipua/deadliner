@@ -5,24 +5,31 @@ import { byDay, dayName, relative, time } from "./time";
 
 export function DeadlinesPage({ onUnauthorized }: { onUnauthorized: () => void }) {
   const { data, setData, error, setError } = useLoad(api.deadlines, onUnauthorized);
-  const [busy, setBusy] = useState<number | null>(null);
+  const [busy, setBusy] = useState<ReadonlySet<number>>(new Set());
 
   if (error) return <p className="notice">{error}</p>;
   if (!data) return <p className="muted">Завантаження…</p>;
 
   const toggle = async (d: Deadline) => {
-    setBusy(d.id);
+    setBusy((b) => new Set(b).add(d.id));
     try {
       const updated = d.status === "DONE" ? await api.undo(d.id) : await api.done(d.id);
-      setData({
-        // done overdue items leave the overdue list; everything else updates in place
-        overdue: data.overdue.filter((x) => x.id !== d.id || updated.status !== "DONE"),
-        upcoming: data.upcoming.map((x) => (x.id === d.id ? updated : x)),
-      });
+      // functional update: several toggles can be in flight, each must apply to the latest state
+      setData((prev) =>
+        prev && {
+          // done overdue items leave the overdue list; everything else updates in place
+          overdue: prev.overdue.filter((x) => x.id !== d.id || updated.status !== "DONE"),
+          upcoming: prev.upcoming.map((x) => (x.id === d.id ? updated : x)),
+        },
+      );
     } catch (e) {
       setError(String((e as Error).message));
     } finally {
-      setBusy(null);
+      setBusy((b) => {
+        const next = new Set(b);
+        next.delete(d.id);
+        return next;
+      });
     }
   };
 
@@ -43,7 +50,7 @@ export function DeadlinesPage({ onUnauthorized }: { onUnauthorized: () => void }
           <p className="fine muted">Moodle не знає, що ти здав. Якщо здав — відміть, і в статистиці це буде «із запізненням».</p>
           <ul className="list">
             {data.overdue.map((d) => (
-              <Row key={d.id} d={d} busy={busy === d.id} onToggle={toggle} />
+              <Row key={d.id} d={d} busy={busy.has(d.id)} onToggle={toggle} />
             ))}
           </ul>
         </section>
@@ -54,7 +61,7 @@ export function DeadlinesPage({ onUnauthorized }: { onUnauthorized: () => void }
           <h2>{dayName(day)}</h2>
           <ul className="list">
             {items.map((d) => (
-              <Row key={d.id} d={d} busy={busy === d.id} onToggle={toggle} />
+              <Row key={d.id} d={d} busy={busy.has(d.id)} onToggle={toggle} />
             ))}
           </ul>
         </section>

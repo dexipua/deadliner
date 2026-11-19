@@ -30,9 +30,6 @@ public class AppUser {
     @Column(name = "digest_enabled")
     private boolean digestEnabled = true;
 
-    @Column(name = "seminar_group")
-    private Integer seminarGroup;
-
     @Column(name = "quiet_hours")
     private boolean quietHours = true;
 
@@ -85,14 +82,6 @@ public class AppUser {
 
     public void setDigestEnabled(boolean digestEnabled) {
         this.digestEnabled = digestEnabled;
-    }
-
-    public Integer getSeminarGroup() {
-        return seminarGroup;
-    }
-
-    public void setSeminarGroup(Integer seminarGroup) {
-        this.seminarGroup = seminarGroup;
     }
 
     public boolean isQuietHours() {

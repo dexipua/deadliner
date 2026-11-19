@@ -49,7 +49,7 @@ public class TelegramConfig {
                     new BotCommand("deadlines", "Дедлайни на 7 днів"),
                     new BotCommand("stats", "Моя статистика"),
                     new BotCommand("settings", "Нагадування й тихі години"),
-                    new BotCommand("group", "Моя група (напр. /group 1)"),
+                    new BotCommand("group", "Мої групи по курсах"),
                     new BotCommand("help", "Як підключити Moodle"),
                     new BotCommand("stop", "Видалити мої дані"))).build());
         } catch (TelegramApiException e) {

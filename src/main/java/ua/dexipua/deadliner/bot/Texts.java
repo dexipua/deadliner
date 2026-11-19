@@ -38,10 +38,12 @@ final class Texts {
             Нагадаю за 3 дні, за 1 день і за 3 години, а в неділю о 19:00 надішлю план на тиждень.
             Змінити — /settings""";
     static final String GROUP_HINT =
-            "\n\n👥 Бачу квізи для різних груп. Напиши <b>/group 5</b> (свій номер), і я не нагадуватиму про чужі.";
-    static final String GROUP_SET = "👥 Готово: показую квізи лише групи <b>%d</b>. Скинути — /group";
-    static final String GROUP_CLEARED = "👥 Показую квізи всіх груп.";
-    static final String GROUP_USAGE = "Напиши номер своєї групи, наприклад: <b>/group 5</b>";
+            "\n\n👥 Бачу квізи для різних груп. Обери свою групу в кожному курсі — /group, і я не нагадуватиму про чужі.";
+    static final String GROUP_PICK =
+            "👥 <b>Групи по курсах</b>\n\nОбери курс і вкажи свою групу — квізи інших груп я ховатиму.";
+    static final String GROUP_COURSE = "👥 <b>%s</b>\n\nЯка твоя група в цьому курсі?";
+    static final String GROUP_NONE = "👍 У твоїх курсах немає квізів по групах — нічого налаштовувати не треба.";
+    static final String GROUP_STALE = "Список курсів змінився — відкрий /group ще раз";
 
     static final String SETTINGS = "⚙️ <b>Налаштування</b>\n\nНатисни, щоб увімкнути або вимкнути:";
     static final String STOP_CONFIRM =

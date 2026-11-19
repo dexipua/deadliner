@@ -8,6 +8,7 @@ import ua.dexipua.deadliner.bot.Notifier;
 import ua.dexipua.deadliner.bot.UserBlockedException;
 import ua.dexipua.deadliner.deadline.Deadline;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
+import ua.dexipua.deadliner.deadline.CourseGroups;
 import ua.dexipua.deadliner.deadline.GroupFilter;
 import ua.dexipua.deadliner.reminder.ReminderPlanner.SentKey;
 import ua.dexipua.deadliner.user.AppUser;
@@ -36,16 +37,18 @@ public class ReminderJob {
     private final Notifier notifier;
     private final Clock clock;
     private final Snoozes snoozes;
+    private final CourseGroups courseGroups;
     private final ReminderPlanner planner = new ReminderPlanner();
 
     public ReminderJob(DeadlineRepository deadlines, AppUserRepository users, ReminderSettings settings,
-                       SentReminders sentReminders, Snoozes snoozes, MessageFormatter formatter, Notifier notifier,
+                       SentReminders sentReminders, Snoozes snoozes, CourseGroups courseGroups, MessageFormatter formatter, Notifier notifier,
                        Clock clock) {
         this.deadlines = deadlines;
         this.users = users;
         this.settings = settings;
         this.sentReminders = sentReminders;
         this.snoozes = snoozes;
+        this.courseGroups = courseGroups;
         this.formatter = formatter;
         this.notifier = notifier;
         this.clock = clock;
@@ -66,9 +69,7 @@ public class ReminderJob {
                 if (user == null) {
                     continue;
                 }
-                List<Deadline> open = entry.getValue().stream()
-                        .filter(d -> GroupFilter.visible(d, user.getSeminarGroup()))
-                        .toList();
+                List<Deadline> open = GroupFilter.visible(entry.getValue(), courseGroups.of(user.getId()));
                 var sent = sentReminders.findFor(open.stream().map(Deadline::getId).toList());
                 List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now, user.isQuietHours());
                 Set<Long> snoozed = snoozes.dueAmong(open.stream().map(Deadline::getId).toList(), now);

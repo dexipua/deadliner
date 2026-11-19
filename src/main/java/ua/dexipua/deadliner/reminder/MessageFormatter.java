@@ -206,7 +206,8 @@ public class MessageFormatter {
         return String.join(" · ", parts);
     }
 
-    private static String shortCourse(String course) {
+    /** "CS201 (2026-2027)" -> "CS201". */
+    public static String shortCourse(String course) {
         return ACADEMIC_YEAR.matcher(course).replaceAll("");
     }
 

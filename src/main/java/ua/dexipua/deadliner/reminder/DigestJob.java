@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import ua.dexipua.deadliner.bot.Notifier;
 import ua.dexipua.deadliner.bot.UserBlockedException;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
+import ua.dexipua.deadliner.deadline.CourseGroups;
 import ua.dexipua.deadliner.deadline.GroupFilter;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
@@ -28,14 +29,16 @@ public class DigestJob {
     private final AppUserRepository users;
     private final DeadlineRepository deadlines;
     private final MessageFormatter formatter;
+    private final CourseGroups courseGroups;
     private final Notifier notifier;
     private final Clock clock;
 
-    public DigestJob(AppUserRepository users, DeadlineRepository deadlines, MessageFormatter formatter,
+    public DigestJob(AppUserRepository users, DeadlineRepository deadlines, MessageFormatter formatter, CourseGroups courseGroups,
                      Notifier notifier, Clock clock) {
         this.users = users;
         this.deadlines = deadlines;
         this.formatter = formatter;
+        this.courseGroups = courseGroups;
         this.notifier = notifier;
         this.clock = clock;
     }
@@ -47,9 +50,8 @@ public class DigestJob {
 
     public void runOnce(Instant now) {
         for (AppUser user : users.findByActiveTrueAndDigestEnabledTrue()) {
-            formatter.digest(deadlines.findOpenDueBetween(user.getId(), now, now.plus(WEEK)).stream()
-                            .filter(d -> GroupFilter.visible(d, user.getSeminarGroup()))
-                            .toList(), now)
+            formatter.digest(GroupFilter.visible(deadlines.findOpenDueBetween(user.getId(), now, now.plus(WEEK)),
+                            courseGroups.of(user.getId())), now)
                     .ifPresent(text -> send(user, text));
         }
     }

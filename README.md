@@ -8,7 +8,7 @@ You paste your Moodle calendar link once. Deadliner then:
 - sends a **plan for the week** every Sunday at 19:00;
 - shows what is due in the next 7 days with `/deadlines`;
 - lets you tap **✅ Done** under a reminder so it stops reminding you, or **⏰ +1 hour** to be reminded again later;
-- hides quizzes of other seminar groups after `/group 5`;
+- hides quizzes of other seminar groups: `/group` lets you pick your group in each course with buttons;
 - keeps **quiet hours** (23:00–08:00): night reminders arrive at 08:00 in one message, unless the deadline is before that;
 - shows `/stats`: handed in on time, late, overdue and upcoming, per course.
 

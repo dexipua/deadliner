@@ -22,6 +22,7 @@ import java.net.URI;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -127,32 +128,66 @@ class CommandHandlerIT {
         assertThat(handler.handle(ME, URL).text()).contains("/group");
     }
 
+    private static List<String> callbacks(BotReply reply) {
+        return reply.buttons().stream().flatMap(List::stream).map(InlineButton::callbackData).toList();
+    }
+
     @Test
-    void groupHidesOtherGroupsQuizzes() {
+    void groupListsCoursesThatHaveGroupQuizzes() {
         handler.handle(ME, URL);
 
-        assertThat(handler.handle(ME, "/group 3").text()).contains("3");
+        BotReply reply = handler.handle(ME, "/group");
+
+        assertThat(reply.buttons().getFirst().getFirst().text()).contains("TEST101").contains("усі групи");
+        assertThat(callbacks(reply)).containsExactly("grp:c:0");
+    }
+
+    @Test
+    void choosingCourseShowsGroupNumbersInPlace() {
+        handler.handle(ME, URL);
+
+        BotReply reply = handler.handleCallback(ME, "grp:c:0");
+
+        assertThat(reply.mode()).isEqualTo(BotReply.Mode.EDIT);
+        assertThat(callbacks(reply)).contains("grp:s:0:1", "grp:s:0:10", "grp:r:0", "grp:list");
+    }
+
+    @Test
+    void settingGroupHidesOtherGroupsOfThatCourse() {
+        handler.handle(ME, URL);
+
+        BotReply reply = handler.handleCallback(ME, "grp:s:0:3");
+        assertThat(reply.buttons().getFirst().getFirst().text()).contains("група 3");
         assertThat(handler.handle(ME, "/deadlines").text()).doesNotContain("Квіз 1");
 
-        handler.handle(ME, "/group 2");
+        handler.handleCallback(ME, "grp:s:0:2");
         assertThat(handler.handle(ME, "/deadlines").text()).contains("Квіз 1");
     }
 
     @Test
-    void groupWithoutNumberShowsAllAgain() {
+    void resetShowsAllGroupsAgain() {
         handler.handle(ME, URL);
-        handler.handle(ME, "/group 3");
+        handler.handleCallback(ME, "grp:s:0:3");
 
-        handler.handle(ME, "/group");
+        handler.handleCallback(ME, "grp:r:0");
 
         assertThat(handler.handle(ME, "/deadlines").text()).contains("Квіз 1");
     }
 
     @Test
-    void groupWithGarbageGetsAHint() {
+    void groupWithoutGroupQuizzesSaysSo() {
+        fetcher.bodies.put(URI.create(URL),
+                StubFeedFetcher.withoutEvent(StubFeedFetcher.fixture(), "1002@teaching.kse.org.ua"));
         handler.handle(ME, URL);
 
-        assertThat(handler.handle(ME, "/group five").text()).contains("/group 5");
+        assertThat(handler.handle(ME, "/group").text()).contains("немає");
+    }
+
+    @Test
+    void staleCourseButtonIsHandled() {
+        handler.handle(ME, URL);
+
+        assertThat(handler.handleCallback(ME, "grp:s:9:1").mode()).isEqualTo(BotReply.Mode.TOAST);
     }
 
     @Test

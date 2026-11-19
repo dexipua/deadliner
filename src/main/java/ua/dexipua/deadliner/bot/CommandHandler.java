@@ -1,6 +1,7 @@
 package ua.dexipua.deadliner.bot;
 
 import org.springframework.stereotype.Component;
+import ua.dexipua.deadliner.deadline.CourseGroups;
 import ua.dexipua.deadliner.deadline.Deadline;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
 import ua.dexipua.deadliner.deadline.DeadlineStatus;
@@ -18,7 +19,9 @@ import ua.dexipua.deadliner.user.AppUserRepository;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -37,26 +40,27 @@ public class CommandHandler {
     private final ReminderSettings settings;
     private final MessageFormatter formatter;
     private final Snoozes snoozes;
+    private final CourseGroups courseGroups;
     private final Clock clock;
 
     public CommandHandler(FeedSyncService feedSync, AppUserRepository users, DeadlineRepository deadlines,
-                          ReminderSettings settings, MessageFormatter formatter, Snoozes snoozes, Clock clock) {
+                          ReminderSettings settings, MessageFormatter formatter, Snoozes snoozes, CourseGroups courseGroups,
+                          Clock clock) {
         this.feedSync = feedSync;
         this.users = users;
         this.deadlines = deadlines;
         this.settings = settings;
         this.formatter = formatter;
         this.snoozes = snoozes;
+        this.courseGroups = courseGroups;
         this.clock = clock;
     }
 
     public BotReply handle(long telegramId, String text) {
         reactivate(telegramId);
         String command = text == null ? "" : text.strip();
-        if (command.equals("/group") || command.startsWith("/group ")) {
-            return groupCommand(telegramId, command.substring("/group".length()).strip());
-        }
         return switch (command) {
+            case "/group" -> user(telegramId).map(this::groupList).orElse(BotReply.of(Texts.NOT_CONNECTED));
             case "/start" -> BotReply.withButtons(Texts.START,
                     List.of(List.of(new InlineButton(Texts.HELP_BUTTON, HELP_LINK))));
             case "/help" -> BotReply.of(Texts.HOW_TO_CONNECT);
@@ -91,6 +95,9 @@ public class CommandHandler {
         }
         if (data.equals(STOP_CANCELLED)) {
             return BotReply.edit(Texts.STOP_CANCELLED, List.of());
+        }
+        if (data.startsWith("grp:")) {
+            return groupCallback(user.get(), data);
         }
         if (data.startsWith("done:")) {
             return markDone(user.get(), data.substring("done:".length()));
@@ -136,23 +143,73 @@ public class CommandHandler {
         return BotReply.of(formatter.list(visible(user.get(), week), now));
     }
 
-    private BotReply groupCommand(long telegramId, String argument) {
-        Optional<AppUser> user = user(telegramId);
-        if (user.isEmpty()) {
-            return BotReply.of(Texts.NOT_CONNECTED);
+    private BotReply groupList(AppUser user) {
+        List<String> courses = GroupFilter.coursesWithGroups(deadlines.findByUserId(user.getId()));
+        if (courses.isEmpty()) {
+            return BotReply.of(Texts.GROUP_NONE);
         }
-        if (argument.isEmpty()) {
-            user.get().setSeminarGroup(null);
-            users.save(user.get());
-            return BotReply.of(Texts.GROUP_CLEARED);
+        return BotReply.withButtons(Texts.GROUP_PICK, courseButtons(user, courses));
+    }
+
+    /** grp:list | grp:c:{course} | grp:s:{course}:{group} | grp:r:{course}; course = index in the sorted list. */
+    private BotReply groupCallback(AppUser user, String data) {
+        List<String> courses = GroupFilter.coursesWithGroups(deadlines.findByUserId(user.getId()));
+        String[] parts = data.split(":");
+        if (parts[1].equals("list")) {
+            return BotReply.edit(Texts.GROUP_PICK, courseButtons(user, courses));
         }
-        if (!argument.matches("\\d{1,3}")) {
-            return BotReply.of(Texts.GROUP_USAGE);
+        int index;
+        try {
+            index = Integer.parseInt(parts[2]);
+        } catch (RuntimeException e) {
+            return BotReply.toast(Texts.UNKNOWN_BUTTON, null);
         }
-        int group = Integer.parseInt(argument);
-        user.get().setSeminarGroup(group);
-        users.save(user.get());
-        return BotReply.of(Texts.GROUP_SET.formatted(group));
+        if (index < 0 || index >= courses.size()) {
+            return BotReply.toast(Texts.GROUP_STALE, null);
+        }
+        String course = courses.get(index);
+        switch (parts[1]) {
+            case "c" -> {
+                return BotReply.edit(Texts.GROUP_COURSE.formatted(Html.escape(MessageFormatter.shortCourse(course))),
+                        groupNumberButtons(index, courseGroups.of(user.getId()).get(course)));
+            }
+            case "s" -> {
+                if (parts.length < 4 || !parts[3].matches("\\d{1,2}")) {
+                    return BotReply.toast(Texts.UNKNOWN_BUTTON, null);
+                }
+                courseGroups.set(user.getId(), course, Integer.parseInt(parts[3]));
+            }
+            case "r" -> courseGroups.clear(user.getId(), course);
+            default -> {
+                return BotReply.toast(Texts.UNKNOWN_BUTTON, null);
+            }
+        }
+        return BotReply.edit(Texts.GROUP_PICK, courseButtons(user, courses));
+    }
+
+    private List<List<InlineButton>> courseButtons(AppUser user, List<String> courses) {
+        Map<String, Integer> groups = courseGroups.of(user.getId());
+        List<List<InlineButton>> rows = new ArrayList<>();
+        for (int i = 0; i < courses.size(); i++) {
+            Integer group = groups.get(courses.get(i));
+            String label = "📘 " + MessageFormatter.shortCourse(courses.get(i)) + " · "
+                    + (group == null ? "усі групи" : "група " + group);
+            rows.add(List.of(new InlineButton(label, "grp:c:" + i)));
+        }
+        return rows;
+    }
+
+    private static List<List<InlineButton>> groupNumberButtons(int course, Integer current) {
+        List<List<InlineButton>> rows = new ArrayList<>();
+        for (int start = 1; start <= 10; start += 5) {
+            List<InlineButton> row = new ArrayList<>();
+            for (int n = start; n < start + 5; n++) {
+                row.add(new InlineButton((Integer.valueOf(n).equals(current) ? "✅ " : "") + n, "grp:s:" + course + ":" + n));
+            }
+            rows.add(row);
+        }
+        rows.add(List.of(new InlineButton("Усі групи", "grp:r:" + course), new InlineButton("← Назад", "grp:list")));
+        return rows;
     }
 
     private BotReply snooze(AppUser user, String rawId) {
@@ -201,8 +258,8 @@ public class CommandHandler {
         return new InlineButton((on ? "✅ " : "▫️ ") + label, data);
     }
 
-    private static List<Deadline> visible(AppUser user, List<Deadline> list) {
-        return list.stream().filter(d -> GroupFilter.visible(d, user.getSeminarGroup())).toList();
+    private List<Deadline> visible(AppUser user, List<Deadline> list) {
+        return GroupFilter.visible(list, courseGroups.of(user.getId()));
     }
 
     private boolean hasGroupQuizzes(long telegramId) {

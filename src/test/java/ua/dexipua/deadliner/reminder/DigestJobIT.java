@@ -28,6 +28,7 @@ class DigestJobIT {
     @Autowired AppUserRepository users;
     @Autowired DeadlineRepository deadlines;
     @Autowired RecordingNotifier notifier;
+    @Autowired ua.dexipua.deadliner.deadline.CourseGroups courseGroups;
     @Autowired JdbcTemplate jdbc;
 
     @BeforeEach
@@ -62,10 +63,10 @@ class DigestJobIT {
     @Test
     void digestSkipsOtherGroups() {
         AppUser user = user(1L, true, Duration.ofDays(3));
-        user.setSeminarGroup(5);
-        users.save(user);
+        courseGroups.set(user.getId(), "MATH101 (2026-2027)", 5);
         Deadline other = new Deadline(user.getId(), "g7");
         other.setTitle("Квіз · Група 7");
+        other.setCourseName("MATH101 (2026-2027)");
         other.setDueAt(SUNDAY_EVENING.plus(Duration.ofDays(2)));
         deadlines.save(other);
 

@@ -30,6 +30,7 @@ class ReminderJobIT {
     @Autowired ReminderSettings settings;
     @Autowired RecordingNotifier notifier;
     @Autowired Snoozes snoozes;
+    @Autowired ua.dexipua.deadliner.deadline.CourseGroups courseGroups;
     @Autowired JdbcTemplate jdbc;
 
     @BeforeEach
@@ -97,14 +98,15 @@ class ReminderJobIT {
 
     @Test
     void otherGroupsQuizIsNotReminded() {
-        AppUser user = users.save(new AppUser(700L, NOW));
-        user.setSeminarGroup(5);
+        AppUser user = new AppUser(700L, NOW);
         user.setQuietHours(false);
-        users.save(user);
+        user = users.save(user);
+        courseGroups.set(user.getId(), "MATH101 (2026-2027)", 5);
         settings.createDefaultsIfMissing(user.getId());
         for (String title : new String[] {"Квіз 8 · Група 5", "Квіз 8 · Група 7"}) {
             Deadline d = new Deadline(user.getId(), title);
             d.setTitle(title);
+            d.setCourseName("MATH101 (2026-2027)");
             d.setDueAt(DUE_TOMORROW);
             deadlines.save(d);
         }

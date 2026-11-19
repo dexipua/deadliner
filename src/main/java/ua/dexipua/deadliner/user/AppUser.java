@@ -30,6 +30,9 @@ public class AppUser {
     @Column(name = "digest_enabled")
     private boolean digestEnabled = true;
 
+    @Column(name = "seminar_group")
+    private Integer seminarGroup;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -79,6 +82,14 @@ public class AppUser {
 
     public void setDigestEnabled(boolean digestEnabled) {
         this.digestEnabled = digestEnabled;
+    }
+
+    public Integer getSeminarGroup() {
+        return seminarGroup;
+    }
+
+    public void setSeminarGroup(Integer seminarGroup) {
+        this.seminarGroup = seminarGroup;
     }
 
     public Instant getCreatedAt() {

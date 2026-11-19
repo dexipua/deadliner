@@ -74,6 +74,24 @@ class ReminderJobIT {
     }
 
     @Test
+    void otherGroupsQuizIsNotReminded() {
+        AppUser user = users.save(new AppUser(700L, NOW));
+        user.setSeminarGroup(5);
+        users.save(user);
+        settings.createDefaultsIfMissing(user.getId());
+        for (String title : new String[] {"Квіз 8 · Група 5", "Квіз 8 · Група 7"}) {
+            Deadline d = new Deadline(user.getId(), title);
+            d.setTitle(title);
+            d.setDueAt(DUE_TOMORROW);
+            deadlines.save(d);
+        }
+
+        job.runOnce(NOW);
+
+        assertThat(notifier.sent.getFirst().text()).contains("Група 5").doesNotContain("Група 7");
+    }
+
+    @Test
     void userDeletedMidJobDoesNotStopRemindersForOthers() {
         AppUser leaving = userWithTwoDeadlinesDueTomorrow(500L);
         userWithTwoDeadlinesDueTomorrow(600L);

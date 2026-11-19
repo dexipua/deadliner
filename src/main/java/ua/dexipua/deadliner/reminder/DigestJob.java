@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 import ua.dexipua.deadliner.bot.Notifier;
 import ua.dexipua.deadliner.bot.UserBlockedException;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
+import ua.dexipua.deadliner.deadline.GroupFilter;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
 
@@ -46,7 +47,9 @@ public class DigestJob {
 
     public void runOnce(Instant now) {
         for (AppUser user : users.findByActiveTrueAndDigestEnabledTrue()) {
-            formatter.digest(deadlines.findOpenDueBetween(user.getId(), now, now.plus(WEEK)))
+            formatter.digest(deadlines.findOpenDueBetween(user.getId(), now, now.plus(WEEK)).stream()
+                            .filter(d -> GroupFilter.visible(d, user.getSeminarGroup()))
+                            .toList())
                     .ifPresent(text -> send(user, text));
         }
     }

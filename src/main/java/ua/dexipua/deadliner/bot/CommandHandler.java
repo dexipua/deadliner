@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import ua.dexipua.deadliner.deadline.Deadline;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
 import ua.dexipua.deadliner.deadline.DeadlineStatus;
+import ua.dexipua.deadliner.deadline.GroupFilter;
 import ua.dexipua.deadliner.feed.FeedSyncService;
 import ua.dexipua.deadliner.feed.FeedSyncService.ConnectResult;
 import ua.dexipua.deadliner.feed.FeedUrlValidator;
@@ -47,6 +48,9 @@ public class CommandHandler {
     public BotReply handle(long telegramId, String text) {
         reactivate(telegramId);
         String command = text == null ? "" : text.strip();
+        if (command.equals("/group") || command.startsWith("/group ")) {
+            return groupCommand(telegramId, command.substring("/group".length()).strip());
+        }
         return switch (command) {
             case "/start" -> BotReply.of(Texts.START);
             case "/deadlines" -> deadlinesCommand(telegramId);
@@ -88,7 +92,8 @@ public class CommandHandler {
         String text = switch (result) {
             case ConnectResult.Connected c -> Texts.CONNECTED.formatted(c.count())
                     + c.nearest().map(d -> Texts.NEAREST.formatted(formatter.line(d))).orElse("")
-                    + Texts.CONNECTED_FOOTER;
+                    + Texts.CONNECTED_FOOTER
+                    + (hasGroupQuizzes(telegramId) ? Texts.GROUP_HINT : "");
             case ConnectResult.FeedUnreachable u -> Texts.FEED_UNREACHABLE;
             case ConnectResult.InvalidUrl i -> Texts.NOT_A_LINK;
         };
@@ -101,7 +106,34 @@ public class CommandHandler {
             return BotReply.of(Texts.NOT_CONNECTED);
         }
         Instant now = clock.instant();
-        return BotReply.of(formatter.list(deadlines.findOpenDueBetween(user.get().getId(), now, now.plus(WEEK))));
+        return BotReply.of(formatter.list(deadlines.findOpenDueBetween(user.get().getId(), now, now.plus(WEEK)).stream()
+                .filter(d -> GroupFilter.visible(d, user.get().getSeminarGroup()))
+                .toList()));
+    }
+
+    private BotReply groupCommand(long telegramId, String argument) {
+        Optional<AppUser> user = user(telegramId);
+        if (user.isEmpty()) {
+            return BotReply.of(Texts.NOT_CONNECTED);
+        }
+        if (argument.isEmpty()) {
+            user.get().setSeminarGroup(null);
+            users.save(user.get());
+            return BotReply.of(Texts.GROUP_CLEARED);
+        }
+        if (!argument.matches("\\d{1,3}")) {
+            return BotReply.of(Texts.GROUP_USAGE);
+        }
+        int group = Integer.parseInt(argument);
+        user.get().setSeminarGroup(group);
+        users.save(user.get());
+        return BotReply.of(Texts.GROUP_SET.formatted(group));
+    }
+
+    private boolean hasGroupQuizzes(long telegramId) {
+        return user(telegramId)
+                .map(u -> deadlines.findByUserId(u.getId()).stream().anyMatch(GroupFilter::mentionsGroup))
+                .orElse(false);
     }
 
     private BotReply markDone(AppUser user, String rawId) {

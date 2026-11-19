@@ -9,6 +9,7 @@ import ua.dexipua.deadliner.bot.Notifier;
 import ua.dexipua.deadliner.bot.UserBlockedException;
 import ua.dexipua.deadliner.deadline.Deadline;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
+import ua.dexipua.deadliner.deadline.GroupFilter;
 import ua.dexipua.deadliner.reminder.ReminderPlanner.SentKey;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
@@ -58,7 +59,13 @@ public class ReminderJob {
         for (Map.Entry<Long, List<Deadline>> entry : byUser.entrySet()) {
             // one user's failure (e.g. deleted via /stop mid-run) must not skip everyone after them
             try {
-                List<Deadline> open = entry.getValue();
+                AppUser user = users.findById(entry.getKey()).orElse(null);
+                if (user == null) {
+                    continue;
+                }
+                List<Deadline> open = entry.getValue().stream()
+                        .filter(d -> GroupFilter.visible(d, user.getSeminarGroup()))
+                        .toList();
                 var sent = sentReminders.findFor(open.stream().map(Deadline::getId).toList());
                 List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now);
                 if (!due.isEmpty()) {

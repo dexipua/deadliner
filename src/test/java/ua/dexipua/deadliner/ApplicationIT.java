@@ -16,9 +16,12 @@ class ApplicationIT {
     JdbcTemplate jdbc;
 
     @Test
-    void flywayAppliedInitialSchema() {
+    void flywayAppliedAllMigrations() {
+        Integer failed = jdbc.queryForObject(
+                "select count(*) from flyway_schema_history where not success", Integer.class);
         Integer applied = jdbc.queryForObject(
                 "select count(*) from flyway_schema_history where success", Integer.class);
-        assertThat(applied).isEqualTo(1);
+        assertThat(failed).isZero();
+        assertThat(applied).isPositive();
     }
 }

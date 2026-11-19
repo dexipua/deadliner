@@ -60,6 +60,21 @@ class DigestJobIT {
     }
 
     @Test
+    void digestSkipsOtherGroups() {
+        AppUser user = user(1L, true, Duration.ofDays(3));
+        user.setSeminarGroup(5);
+        users.save(user);
+        Deadline other = new Deadline(user.getId(), "g7");
+        other.setTitle("Квіз · Група 7");
+        other.setDueAt(SUNDAY_EVENING.plus(Duration.ofDays(2)));
+        deadlines.save(other);
+
+        job.runOnce(SUNDAY_EVENING);
+
+        assertThat(notifier.sent.getFirst().text()).doesNotContain("Група 7");
+    }
+
+    @Test
     void blockedUserIsDeactivated() {
         user(1L, true, Duration.ofDays(3));
         notifier.blocked.add(1L);

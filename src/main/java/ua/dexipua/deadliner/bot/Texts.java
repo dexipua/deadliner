@@ -16,7 +16,7 @@ final class Texts {
             Я зберігаю його зашифрованим, видаляю твоє повідомлення з ним із чату і бачу лише дедлайни. \
             /stop — видалити всі твої дані.
 
-            Команди: /deadlines — дедлайни на 7 днів, /settings — нагадування, /stop — видалити дані.""";
+            Команди: /deadlines — дедлайни на 7 днів, /group — твоя група, /settings — нагадування, /stop — видалити дані.""";
 
     static final String NOT_A_LINK =
             "Не схоже на посилання з календаря Moodle KSE 🤔 Як його отримати — дивись /start.";
@@ -33,6 +33,11 @@ final class Texts {
     static final String STOPPED = "Готово, усі твої дані видалено. Щоб почати знову — /start.";
     static final String DONE = "✅ Позначено як здане: %s";
     static final String DEADLINE_NOT_FOUND = "Не знайшов цей дедлайн — можливо, його вже прибрали.";
+    static final String GROUP_HINT =
+            "\n\n👥 Бачу квізи для різних груп. Напиши /group 5 (свій номер), і я не нагадуватиму про чужі.";
+    static final String GROUP_SET = "👥 Готово: показую квізи лише групи %d. Скинути — /group";
+    static final String GROUP_CLEARED = "👥 Показую квізи всіх груп.";
+    static final String GROUP_USAGE = "Напиши номер своєї групи, наприклад: /group 5";
     static final String SETTINGS = "⚙️ Налаштування. Натисни, щоб увімкнути або вимкнути:";
 
     private Texts() {

@@ -115,6 +115,39 @@ class CommandHandlerIT {
     }
 
     @Test
+    void connectSuggestsSettingGroupWhenFeedHasGroupQuizzes() {
+        assertThat(handler.handle(ME, URL).text()).contains("/group");
+    }
+
+    @Test
+    void groupHidesOtherGroupsQuizzes() {
+        handler.handle(ME, URL);
+
+        assertThat(handler.handle(ME, "/group 3").text()).contains("3");
+        assertThat(handler.handle(ME, "/deadlines").text()).doesNotContain("Квіз 1");
+
+        handler.handle(ME, "/group 2");
+        assertThat(handler.handle(ME, "/deadlines").text()).contains("Квіз 1");
+    }
+
+    @Test
+    void groupWithoutNumberShowsAllAgain() {
+        handler.handle(ME, URL);
+        handler.handle(ME, "/group 3");
+
+        handler.handle(ME, "/group");
+
+        assertThat(handler.handle(ME, "/deadlines").text()).contains("Квіз 1");
+    }
+
+    @Test
+    void groupWithGarbageGetsAHint() {
+        handler.handle(ME, URL);
+
+        assertThat(handler.handle(ME, "/group five").text()).contains("/group 5");
+    }
+
+    @Test
     void deadlinesBeforeConnectingAsksToConnect() {
         assertThat(handler.handle(ME, "/deadlines").text()).contains("/start");
     }

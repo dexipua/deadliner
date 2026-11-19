@@ -89,17 +89,29 @@ public class MessageFormatter {
         if (stats.byCourse().isEmpty()) {
             return "📊 Поки що немає даних для статистики.";
         }
-        StringBuilder text = new StringBuilder("📊 <b>Твоя статистика</b>\n\n").append(counts(stats.total()));
-        Integer percent = stats.total().onTimePercent();
+        Stats.Counts total = stats.total();
+        StringBuilder text = new StringBuilder("📊 <b>Твоя статистика</b>\n");
+        Integer percent = total.onTimePercent();
         if (percent != null) {
-            text.append("\nВчасно здано: <b>").append(percent).append("%</b>");
+            text.append("\nВчасно здано: <b>").append(percent).append("%</b>\n").append(bar(percent));
         }
-        text.append("\n\n<b>По курсах</b>");
-        stats.byCourse().forEach((course, c) ->
-                text.append("\n• ").append(escape(shortCourse(course))).append(" — ").append(counts(c)));
-        text.append("\n\n<i>✅ вчасно · ⏰ із запізненням · ❌ прострочено · 🔜 попереду.\n")
-                .append("«Здано» — коли ти натискаєш ✅ під нагадуванням.</i>");
+        text.append("\n✅ ").append(total.onTime()).append(" вчасно · ⏰ ").append(total.late()).append(" із запізненням")
+                .append("\n❌ ").append(total.overdue()).append(" прострочено · 🔜 ").append(total.upcoming()).append(" попереду");
+        stats.byCourse().forEach((course, c) -> {
+            text.append("\n\n📘 <b>").append(escape(shortCourse(course))).append("</b>");
+            Integer coursePercent = c.onTimePercent();
+            if (coursePercent != null) {
+                text.append("  ").append(bar(coursePercent)).append(' ').append(coursePercent).append('%');
+            }
+            text.append('\n').append(counts(c));
+        });
+        text.append("\n\n<i>«Здано» — коли ти тиснеш ✅ під нагадуванням.</i>");
         return text.toString();
+    }
+
+    private static String bar(int percent) {
+        int filled = Math.round(percent / 10f);
+        return "▓".repeat(filled) + "░".repeat(10 - filled);
     }
 
     /** Plain text (no HTML): "CS201: Assignment 3". */
@@ -176,8 +188,22 @@ public class MessageFormatter {
                 + MONTHS[kyiv.getMonthValue() - 1];
     }
 
+    /** Only the non-zero counts: "✅ 1 · ⏰ 1". */
     private static String counts(Stats.Counts c) {
-        return "✅ " + c.onTime() + " · ⏰ " + c.late() + " · ❌ " + c.overdue() + " · 🔜 " + c.upcoming();
+        List<String> parts = new ArrayList<>();
+        if (c.onTime() > 0) {
+            parts.add("✅ " + c.onTime());
+        }
+        if (c.late() > 0) {
+            parts.add("⏰ " + c.late());
+        }
+        if (c.overdue() > 0) {
+            parts.add("❌ " + c.overdue());
+        }
+        if (c.upcoming() > 0) {
+            parts.add("🔜 " + c.upcoming());
+        }
+        return String.join(" · ", parts);
     }
 
     private static String shortCourse(String course) {

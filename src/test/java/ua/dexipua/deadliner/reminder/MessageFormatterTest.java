@@ -117,6 +117,34 @@ class MessageFormatterTest {
     }
 
     @Test
+    void statsShowPercentWithProgressBarAndCourseBlocks() {
+        Deadline late = deadline(1, "CS201 (2026-2027)", "A1", "2026-11-10T21:59:00Z");
+        late.markDone(Instant.parse("2026-11-11T08:00:00Z"));
+        Deadline onTime = deadline(2, "CS201 (2026-2027)", "A2", "2026-11-12T21:59:00Z");
+        onTime.markDone(Instant.parse("2026-11-12T20:00:00Z"));
+        Deadline overdue = deadline(3, "MATH101 (2026-2027)", "Mind Map", "2026-11-15T21:59:00Z");
+        Deadline upcoming = deadline(4, "MATH101 (2026-2027)", "Quiz", "2026-11-25T21:59:00Z");
+
+        String text = formatter.stats(ua.dexipua.deadliner.deadline.Stats.of(List.of(late, onTime, overdue, upcoming), NOW));
+
+        assertThat(text)
+                .contains("Вчасно здано: <b>33%</b>")
+                .contains("▓▓▓░░░░░░░")
+                .contains("📘 <b>CS201</b>  ▓▓▓▓▓░░░░░ 50%")
+                .contains("📘 <b>MATH101</b>  ░░░░░░░░░░ 0%")
+                .contains("🔜 1");
+    }
+
+    @Test
+    void statsForCourseWithNothingFinishedShowsNoPercent() {
+        Deadline upcoming = deadline(4, "MATH101 (2026-2027)", "Quiz", "2026-11-25T21:59:00Z");
+
+        String text = formatter.stats(ua.dexipua.deadliner.deadline.Stats.of(List.of(upcoming), NOW));
+
+        assertThat(text).contains("📘 <b>MATH101</b>\n").doesNotContain("%");
+    }
+
+    @Test
     void summerTimeIsShownInKyivTime() {
         Deadline exam = deadline(1, null, "Exam", "2027-03-28T20:59:00Z");
 

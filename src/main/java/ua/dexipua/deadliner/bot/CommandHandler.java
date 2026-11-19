@@ -3,8 +3,8 @@ package ua.dexipua.deadliner.bot;
 import org.springframework.stereotype.Component;
 import ua.dexipua.deadliner.deadline.CourseGroups;
 import ua.dexipua.deadliner.deadline.Deadline;
+import ua.dexipua.deadliner.deadline.DeadlineActions;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
-import ua.dexipua.deadliner.deadline.DeadlineStatus;
 import ua.dexipua.deadliner.deadline.GroupFilter;
 import ua.dexipua.deadliner.deadline.Stats;
 import ua.dexipua.deadliner.feed.FeedSyncService;
@@ -12,7 +12,6 @@ import ua.dexipua.deadliner.feed.FeedSyncService.ConnectResult;
 import ua.dexipua.deadliner.feed.FeedUrlValidator;
 import ua.dexipua.deadliner.reminder.MessageFormatter;
 import ua.dexipua.deadliner.reminder.ReminderSettings;
-import ua.dexipua.deadliner.reminder.Snoozes;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
 
@@ -31,8 +30,6 @@ public class CommandHandler {
 
     private static final Duration WEEK = Duration.ofDays(7);
     private static final Duration OVERDUE_WINDOW = Duration.ofDays(14);
-    private static final Duration SNOOZE = Duration.ofHours(1);
-    private static final Duration SNOOZE_BEFORE_DUE = Duration.ofMinutes(10);
     private static final String HELP_LINK = "help:link";
     private static final String STOP_CONFIRMED = "stop:confirm";
     private static final String STOP_CANCELLED = "stop:cancel";
@@ -42,19 +39,19 @@ public class CommandHandler {
     private final DeadlineRepository deadlines;
     private final ReminderSettings settings;
     private final MessageFormatter formatter;
-    private final Snoozes snoozes;
+    private final DeadlineActions actions;
     private final CourseGroups courseGroups;
     private final Clock clock;
 
     public CommandHandler(FeedSyncService feedSync, AppUserRepository users, DeadlineRepository deadlines,
-                          ReminderSettings settings, MessageFormatter formatter, Snoozes snoozes, CourseGroups courseGroups,
+                          ReminderSettings settings, MessageFormatter formatter, DeadlineActions actions, CourseGroups courseGroups,
                           Clock clock) {
         this.feedSync = feedSync;
         this.users = users;
         this.deadlines = deadlines;
         this.settings = settings;
         this.formatter = formatter;
-        this.snoozes = snoozes;
+        this.actions = actions;
         this.courseGroups = courseGroups;
         this.clock = clock;
     }
@@ -236,57 +233,31 @@ public class CommandHandler {
     }
 
     private BotReply snooze(AppUser user, String rawId) {
-        Optional<Deadline> deadline = ownDeadline(user, rawId);
-        if (deadline.isEmpty() || deadline.get().getStatus() != DeadlineStatus.OPEN) {
-            return BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
-        }
-        Instant now = clock.instant();
-        Instant remindAt = now.plus(SNOOZE);
-        Instant latest = deadline.get().getDueAt().minus(SNOOZE_BEFORE_DUE);
-        if (remindAt.isAfter(latest)) {
-            // reminders stop at the deadline, so "in an hour" would never come
-            if (!latest.isAfter(now)) {
-                return BotReply.toast(Texts.SNOOZE_TOO_LATE, null);
-            }
-            remindAt = latest;
-        }
-        snoozes.snooze(deadline.get().getId(), remindAt);
-        return BotReply.toast(Texts.SNOOZED.formatted(formatter.time(remindAt)), null);
+        return switch (actions.snooze(user.getId(), parseId(rawId))) {
+            case DeadlineActions.SnoozeResult.Snoozed s -> BotReply.toast(Texts.SNOOZED.formatted(formatter.time(s.remindAt())), null);
+            case DeadlineActions.SnoozeResult.TooLate t -> BotReply.toast(Texts.SNOOZE_TOO_LATE, null);
+            case DeadlineActions.SnoozeResult.NotFound n -> BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
+        };
     }
 
     private BotReply markDone(AppUser user, String rawId) {
-        Optional<Deadline> deadline = ownDeadline(user, rawId);
-        if (deadline.isEmpty() || deadline.get().getStatus() == DeadlineStatus.GONE) {
-            return BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
-        }
-        Deadline d = deadline.get();
-        if (d.getStatus() == DeadlineStatus.OPEN) {
-            d.markDone(clock.instant());
-            deadlines.save(d);
-            snoozes.delete(List.of(d.getId()));
-        }
-        return BotReply.toast(Texts.DONE.formatted(formatter.toastLabel(d)), d.getId());
+        return actions.markDone(user.getId(), parseId(rawId))
+                .map(d -> BotReply.toast(Texts.DONE.formatted(formatter.toastLabel(d)), d.getId()))
+                .orElse(BotReply.toast(Texts.DEADLINE_NOT_FOUND, null));
     }
 
     private BotReply undoDone(AppUser user, String rawId) {
-        Optional<Deadline> deadline = ownDeadline(user, rawId);
-        if (deadline.isEmpty() || deadline.get().getStatus() == DeadlineStatus.GONE) {
-            return BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
-        }
-        Deadline d = deadline.get();
-        if (d.getStatus() == DeadlineStatus.DONE) {
-            d.reopen();
-            deadlines.save(d);
-        }
-        return BotReply.toast(Texts.UNDONE.formatted(formatter.toastLabel(d)), d.getId());
+        return actions.undo(user.getId(), parseId(rawId))
+                .map(d -> BotReply.toast(Texts.UNDONE.formatted(formatter.toastLabel(d)), d.getId()))
+                .orElse(BotReply.toast(Texts.DEADLINE_NOT_FOUND, null));
     }
 
-    // only the owner may act on a deadline, whatever id the callback carries
-    private Optional<Deadline> ownDeadline(AppUser user, String rawId) {
+    // a malformed id from an old or forged button simply matches nothing
+    private static long parseId(String raw) {
         try {
-            return deadlines.findById(Long.parseLong(rawId)).filter(d -> d.getUserId() == user.getId());
+            return Long.parseLong(raw);
         } catch (NumberFormatException e) {
-            return Optional.empty();
+            return -1;
         }
     }
 

@@ -1,0 +1,350 @@
+{
+  ".github/workflows/ci.yml": {
+    "mtime": 1795046201.8278637,
+    "seen": 1795047479.5772092,
+    "ast_hash": "d55deb11b2b3744a45bf87513be6a6e2",
+    "semantic_hash": ""
+  },
+  "compose.prod.yaml": {
+    "mtime": 1795047350.363315,
+    "seen": 1795047479.5772169,
+    "ast_hash": "11d57088bbae9665f63fd110b9f9a2e1",
+    "semantic_hash": ""
+  },
+  "compose.yaml": {
+    "mtime": 1795046201.710388,
+    "seen": 1795047479.5772204,
+    "ast_hash": "bdc38c1fb2878fe3a11dccfb83e25827",
+    "semantic_hash": ""
+  },
+  "mvnw": {
+    "mtime": 1757326868.0,
+    "seen": 1795047479.5772226,
+    "ast_hash": "ab50dd89da7da2346b28003352eeeeeb",
+    "semantic_hash": ""
+  },
+  "pom.xml": {
+    "mtime": 1795046107.8300602,
+    "seen": 1795047479.5772247,
+    "ast_hash": "56b90182faecd12867ff6ea2052ab58d",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/DeadlinerApplication.java": {
+    "mtime": 1795046201.5393524,
+    "seen": 1795047479.5772264,
+    "ast_hash": "503c867b655f80fb6369d893b4a30744",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/BotReply.java": {
+    "mtime": 1795047184.1631405,
+    "seen": 1795047479.5772283,
+    "ast_hash": "157af7abf0f2b6bfbc6c99014b7c3ac1",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/CommandHandler.java": {
+    "mtime": 1795047186.7232563,
+    "seen": 1795047479.5772297,
+    "ast_hash": "5ee63e78ea3987ea2e40e90a296a8f45",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/DeadlinerBot.java": {
+    "mtime": 1795047266.7011454,
+    "seen": 1795047479.5772312,
+    "ast_hash": "e8417ca050ce3fa674857f09677805dc",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/InlineButton.java": {
+    "mtime": 1795046685.472179,
+    "seen": 1795047479.5772326,
+    "ast_hash": "70e5a3a0d61b6b2bff5ec085586813ae",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/Notifier.java": {
+    "mtime": 1795046684.1943505,
+    "seen": 1795047479.577234,
+    "ast_hash": "4b3bfb7d22ddf546c0a822c481c1c0b4",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/TelegramConfig.java": {
+    "mtime": 1795047238.6096823,
+    "seen": 1795047479.5772357,
+    "ast_hash": "4ca19b036b19a7d2cfae6e79b715a1e9",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/TelegramNotifier.java": {
+    "mtime": 1795047236.8838978,
+    "seen": 1795047479.5772371,
+    "ast_hash": "f376c879a62e53fb577609fff5f5f86c",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/Texts.java": {
+    "mtime": 1795047185.1140227,
+    "seen": 1795047479.5772388,
+    "ast_hash": "9159ec912ffdc321d4350e41d2056702",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/bot/UserBlockedException.java": {
+    "mtime": 1795046686.4697301,
+    "seen": 1795047479.5772402,
+    "ast_hash": "04dbdc628b0192625eb8422f761cf4a9",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/config/AppConfig.java": {
+    "mtime": 1795046730.171803,
+    "seen": 1795047479.5772417,
+    "ast_hash": "18a88994c10e1c5b394ddd46549ba4dd",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/deadline/Deadline.java": {
+    "mtime": 1795046690.5620196,
+    "seen": 1795047479.577243,
+    "ast_hash": "54d9760d6ebe404c64ba31f84d91930e",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/deadline/DeadlineRepository.java": {
+    "mtime": 1795047029.7626271,
+    "seen": 1795047479.5772448,
+    "ast_hash": "adaee95b210a8ad944ac05230bae65f9",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/deadline/DeadlineStatus.java": {
+    "mtime": 1795046689.3138907,
+    "seen": 1795047479.5772462,
+    "ast_hash": "68d6b26192856a7fdd447d0fbf86726f",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/CalendarFeed.java": {
+    "mtime": 1795046692.4682724,
+    "seen": 1795047479.5772474,
+    "ast_hash": "919ad2b100431a3746ab3ed6c0fedf16",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/CalendarFeedRepository.java": {
+    "mtime": 1795046693.38283,
+    "seen": 1795047479.577249,
+    "ast_hash": "8f7e36a687e535b50ae0a186c98cbff5",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/FeedFetcher.java": {
+    "mtime": 1795046694.2493372,
+    "seen": 1795047479.5772505,
+    "ast_hash": "c966add2af9d62934e703fab75facf05",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/FeedSyncJob.java": {
+    "mtime": 1795046729.2787971,
+    "seen": 1795047479.5772524,
+    "ast_hash": "bdbd4bbdf7a0956a10ce0cff17adfc23",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/FeedSyncService.java": {
+    "mtime": 1795046728.2761645,
+    "seen": 1795047479.5772538,
+    "ast_hash": "8bd67ba6abc6cc8c3d85a717525f2d9e",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/FeedUrlCipher.java": {
+    "mtime": 1795046320.9343946,
+    "seen": 1795047479.5772555,
+    "ast_hash": "9cf08f9c67f052ecf6af370b10c4d81a",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/FeedUrlValidator.java": {
+    "mtime": 1795046383.621871,
+    "seen": 1795047479.577257,
+    "ast_hash": "d6f1b907743a754636c8a9a63255f9db",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/HttpFeedFetcher.java": {
+    "mtime": 1795046695.0816617,
+    "seen": 1795047479.5772586,
+    "ast_hash": "786f7bb0edfed72dbf352c6ace3cd094",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/IcalParser.java": {
+    "mtime": 1795046473.1625035,
+    "seen": 1795047479.57726,
+    "ast_hash": "e307c33ac6eacb758795da7de0171656",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/InvalidFeedException.java": {
+    "mtime": 1795046459.3094282,
+    "seen": 1795047479.5772612,
+    "ast_hash": "44614416865b2f5805be99e5db85bae6",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/feed/ParsedDeadline.java": {
+    "mtime": 1795046459.2646706,
+    "seen": 1795047479.5772629,
+    "ast_hash": "ccad78a5f63225834d9d92347386506c",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/reminder/DigestJob.java": {
+    "mtime": 1795047032.1893284,
+    "seen": 1795047479.577264,
+    "ast_hash": "c3124a52ef098aeb571bc97a02ef6fb0",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/reminder/DueReminder.java": {
+    "mtime": 1795046900.9283364,
+    "seen": 1795047479.5772657,
+    "ast_hash": "08bf8afcaa8e499130e73a5b9cb2e4da",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/reminder/MessageFormatter.java": {
+    "mtime": 1795047028.9116929,
+    "seen": 1795047479.5772672,
+    "ast_hash": "cdf5e7318eb43a019459d9646263b2d6",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/reminder/ReminderJob.java": {
+    "mtime": 1795046904.2863765,
+    "seen": 1795047479.5772684,
+    "ast_hash": "05fe0d8581c3effc99839170bbae952b",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/reminder/ReminderPlanner.java": {
+    "mtime": 1795046901.8552997,
+    "seen": 1795047479.57727,
+    "ast_hash": "98fddedf687a03f974139f059d4019f3",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/reminder/ReminderSettings.java": {
+    "mtime": 1795047185.9299097,
+    "seen": 1795047479.5772712,
+    "ast_hash": "51aa5b071761f82db39e8fb745985713",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/reminder/SentReminders.java": {
+    "mtime": 1795046903.4502318,
+    "seen": 1795047479.577273,
+    "ast_hash": "229fa9cf76831237ad0b17e46e4c98e5",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/user/AppUser.java": {
+    "mtime": 1795046687.4111345,
+    "seen": 1795047479.577274,
+    "ast_hash": "581436f97789398938d0b3ad44290611",
+    "semantic_hash": ""
+  },
+  "src/main/java/ua/dexipua/deadliner/user/AppUserRepository.java": {
+    "mtime": 1795047031.3809733,
+    "seen": 1795047479.5772758,
+    "ast_hash": "c50738ce38308a860f799ce0e0d7155b",
+    "semantic_hash": ""
+  },
+  "src/main/resources/application.yml": {
+    "mtime": 1795047239.3792417,
+    "seen": 1795047479.5772772,
+    "ast_hash": "e96550257c249d0248286b6a06ee8d48",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/ApplicationIT.java": {
+    "mtime": 1795046090.5593584,
+    "seen": 1795047479.5772786,
+    "ast_hash": "f8b43e071484a9fcc415e0185c838cdd",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/TestcontainersConfig.java": {
+    "mtime": 1795046620.6016743,
+    "seen": 1795047479.57728,
+    "ast_hash": "cf4869e9be37e0cf67b5c255bff6d7fa",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/bot/CommandHandlerIT.java": {
+    "mtime": 1795047139.1161833,
+    "seen": 1795047479.5772812,
+    "ast_hash": "d649a5f7d565b0950419d9c937e823fc",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/feed/FeedSyncServiceIT.java": {
+    "mtime": 1795046621.4537044,
+    "seen": 1795047479.5772834,
+    "ast_hash": "fbef6e21d228bc1a9ff31099b2bae963",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/feed/FeedUrlCipherTest.java": {
+    "mtime": 1795046303.172133,
+    "seen": 1795047479.5772848,
+    "ast_hash": "9016b90f73b61fbff4d2ba27398d73a2",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/feed/FeedUrlValidatorTest.java": {
+    "mtime": 1795046366.9096553,
+    "seen": 1795047479.5772862,
+    "ast_hash": "3f1d0775396c8fd1d6f3b524f44795e0",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/feed/IcalParserTest.java": {
+    "mtime": 1795046430.177163,
+    "seen": 1795047479.5772877,
+    "ast_hash": "cd1323dee65e8be7ecdb13c4c7a9dc88",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/reminder/DigestJobIT.java": {
+    "mtime": 1795046997.0981603,
+    "seen": 1795047479.5772896,
+    "ast_hash": "37dbae8696c4047988013446258e5b46",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/reminder/DigestScheduleTest.java": {
+    "mtime": 1795046996.1843762,
+    "seen": 1795047479.577291,
+    "ast_hash": "e860526bb459f5894ef411e3ba83f9ba",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/reminder/MessageFormatterTest.java": {
+    "mtime": 1795046995.2443151,
+    "seen": 1795047479.5772922,
+    "ast_hash": "d44c1cd50bf4d154830c5f2ff156a7b5",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/reminder/ReminderJobIT.java": {
+    "mtime": 1795046857.0466602,
+    "seen": 1795047479.5772939,
+    "ast_hash": "64c4fbcc97d9c03a4106eaae104f2369",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/reminder/ReminderPlannerTest.java": {
+    "mtime": 1795046855.3764658,
+    "seen": 1795047479.577295,
+    "ast_hash": "4b289663f900e00f753df0164ce8aa88",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/support/RecordingNotifier.java": {
+    "mtime": 1795046618.650369,
+    "seen": 1795047479.5772967,
+    "ast_hash": "b185bf0171b0664a2015f599e15a24e5",
+    "semantic_hash": ""
+  },
+  "src/test/java/ua/dexipua/deadliner/support/StubFeedFetcher.java": {
+    "mtime": 1795046619.5799122,
+    "seen": 1795047479.5772982,
+    "ast_hash": "047a7285a8ce7d3ee35da4d200331fec",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1795047447.4551868,
+    "seen": 1795047479.5772994,
+    "ast_hash": "37eddbdaba84bd1c3555404f6caee1b4",
+    "semantic_hash": ""
+  },
+  "docs/deploy.md": {
+    "mtime": 1795047448.4145906,
+    "seen": 1795047479.577301,
+    "ast_hash": "8e7561c86471c12f09dc6f3d36d177cf",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-11-19-deadliner-phase1-bot.md": {
+    "mtime": 1795045886.4622645,
+    "seen": 1795047479.5773022,
+    "ast_hash": "d9a2e39c8384b3cf46b5e31c6c4f9eeb",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-11-19-deadliner-design.md": {
+    "mtime": 1795046008.5817525,
+    "seen": 1795047479.577304,
+    "ast_hash": "1197e37df0c5b1f23564722aa1609854",
+    "semantic_hash": ""
+  }
+}

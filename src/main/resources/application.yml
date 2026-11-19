@@ -5,6 +5,11 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/deadliner}
     username: ${DB_USER:deadliner}
     password: ${DB_PASSWORD:deadliner}
+  task:
+    scheduling:
+      pool:
+        # one thread per job: a slow Moodle sync must not delay reminders
+        size: 3
   jpa:
     open-in-view: false
     hibernate:

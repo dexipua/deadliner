@@ -25,7 +25,7 @@
 
 ## Review Focus
 
-1. **Connecting with deadlines already close:** a fresh user whose deadline is in 2 hours must get no burst of the 3-day and 1-day reminders. Only offsets whose send time is still in the future at connect time fire. Pinned in Task 6.
+1. **Connecting with deadlines already close:** a fresh user whose deadline is in 2 hours must get no burst of the 3-day and 1-day reminders. A reminder fires only if its send time is within the last 30 minutes (grace window, see ledger ruling), so at most the smallest offset fires right after connecting. Pinned in Task 6.
 2. **Expired or wrong link:** Moodle answers a bad token with an HTML login page and HTTP 200, not with an error. The parser must reject non-iCal bodies, and the user must get a clear message. Pinned in Tasks 4 and 5.
 3. **DST change in Kyiv** (last Sunday of March and October): the digest still goes out at 19:00 local time, and displayed due times are correct. Pinned in Task 7.
 4. **User blocked the bot:** Telegram returns 403. The bot must stop sending to that user (mark them inactive), and the job must keep running for everyone else. Pinned in Task 8.

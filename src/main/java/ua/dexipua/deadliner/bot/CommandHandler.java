@@ -55,7 +55,7 @@ public class CommandHandler {
                     List.of(new InlineButton(Texts.STOP_BUTTON, STOP_CONFIRMED)));
             default -> FeedUrlValidator.normalize(command).isPresent()
                     ? connect(telegramId, command)
-                    : BotReply.of(Texts.NOT_A_LINK);
+                    : new BotReply(Texts.NOT_A_LINK, List.of(), containsToken(command));
         };
     }
 
@@ -135,6 +135,11 @@ public class CommandHandler {
 
     private static InlineButton toggle(String label, boolean on, String data) {
         return new InlineButton((on ? "✅ " : "❌ ") + label, data);
+    }
+
+    /** Any text with a Moodle token must not stay in the chat, even if it is not a valid link. */
+    public static boolean containsToken(String text) {
+        return text != null && text.contains("authtoken=");
     }
 
     private Optional<AppUser> user(long telegramId) {

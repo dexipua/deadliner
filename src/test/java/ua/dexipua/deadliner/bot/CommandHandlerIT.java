@@ -107,6 +107,14 @@ class CommandHandlerIT {
     }
 
     @Test
+    void invalidLinkWithTokenIsStillDeleted() {
+        BotReply reply = handler.handle(ME, "ось: " + URL.replace("https://", "http://"));
+
+        assertThat(reply.text()).contains("/start");
+        assertThat(reply.deleteUserMessage()).isTrue();
+    }
+
+    @Test
     void deadlinesBeforeConnectingAsksToConnect() {
         assertThat(handler.handle(ME, "/deadlines").text()).contains("/start");
     }

@@ -47,15 +47,27 @@ public class DeadlinerBot implements LongPollingUpdateConsumer {
     }
 
     private void onMessage(Message message) throws TelegramApiException {
-        BotReply reply = handler.handle(message.getFrom().getId(), message.getText());
-        if (reply.deleteUserMessage()) {
-            try {
-                client.execute(new DeleteMessage(message.getChatId().toString(), message.getMessageId()));
-            } catch (TelegramApiException e) {
-                log.warn("Could not delete message with a feed link: {}", e.getMessage());
+        BotReply reply;
+        try {
+            reply = handler.handle(message.getFrom().getId(), message.getText());
+        } finally {
+            // delete a message with a token even if handling it failed
+            if (CommandHandler.containsToken(message.getText())) {
+                delete(message);
             }
         }
+        if (reply.deleteUserMessage() && !CommandHandler.containsToken(message.getText())) {
+            delete(message);
+        }
         send(message.getChatId(), reply);
+    }
+
+    private void delete(Message message) {
+        try {
+            client.execute(new DeleteMessage(message.getChatId().toString(), message.getMessageId()));
+        } catch (TelegramApiException e) {
+            log.warn("Could not delete message with a feed link: {}", e.getMessage());
+        }
     }
 
     private void onCallback(CallbackQuery query) throws TelegramApiException {

@@ -4,7 +4,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import ua.dexipua.deadliner.bot.InlineButton;
 import ua.dexipua.deadliner.bot.Notifier;
 import ua.dexipua.deadliner.bot.UserBlockedException;
 import ua.dexipua.deadliner.deadline.Deadline;
@@ -16,7 +15,6 @@ import ua.dexipua.deadliner.user.AppUserRepository;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,7 +27,6 @@ import java.util.stream.Collectors;
 public class ReminderJob {
 
     private static final Logger log = LoggerFactory.getLogger(ReminderJob.class);
-    private static final int MAX_BUTTON_TITLE = 30;
 
     private final DeadlineRepository deadlines;
     private final AppUserRepository users;
@@ -89,13 +86,8 @@ public class ReminderJob {
         Set<Long> ids = due.stream().map(r -> r.deadline().getId()).collect(Collectors.toCollection(HashSet::new));
         ids.addAll(snoozed);
         List<Deadline> distinct = open.stream().filter(d -> ids.contains(d.getId())).toList();
-        List<InlineButton> buttons = new ArrayList<>();
-        for (Deadline d : distinct) {
-            buttons.add(new InlineButton("✅ Здано: " + shorten(d.getTitle()), "done:" + d.getId()));
-            buttons.add(new InlineButton("⏰ +1 година: " + shorten(d.getTitle()), "snooze:" + d.getId()));
-        }
         try {
-            notifier.send(user.getTelegramId(), formatter.reminder(distinct), buttons);
+            notifier.send(user.getTelegramId(), formatter.reminder(distinct, now), formatter.reminderButtons(distinct));
         } catch (UserBlockedException e) {
             user.setActive(false);
             users.save(user);
@@ -109,9 +101,5 @@ public class ReminderJob {
             sentReminders.record(new SentKey(r.deadline().getId(), r.offsetMinutes(), r.deadline().getDueAt()), now);
         }
         snoozes.delete(snoozed);
-    }
-
-    private static String shorten(String title) {
-        return title.length() <= MAX_BUTTON_TITLE ? title : title.substring(0, MAX_BUTTON_TITLE - 1) + "…";
     }
 }

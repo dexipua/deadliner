@@ -49,7 +49,7 @@ public class DigestJob {
         for (AppUser user : users.findByActiveTrueAndDigestEnabledTrue()) {
             formatter.digest(deadlines.findOpenDueBetween(user.getId(), now, now.plus(WEEK)).stream()
                             .filter(d -> GroupFilter.visible(d, user.getSeminarGroup()))
-                            .toList())
+                            .toList(), now)
                     .ifPresent(text -> send(user, text));
         }
     }

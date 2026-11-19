@@ -13,7 +13,7 @@ import java.util.function.Consumer;
 /** Test double: records messages instead of calling Telegram. */
 public class RecordingNotifier implements Notifier {
 
-    public record Sent(long telegramId, String text, List<InlineButton> buttons) {
+    public record Sent(long telegramId, String text, List<List<InlineButton>> buttons) {
     }
 
     public final List<Sent> sent = new ArrayList<>();
@@ -24,7 +24,7 @@ public class RecordingNotifier implements Notifier {
     public Consumer<Long> beforeSend = id -> { };
 
     @Override
-    public void send(long telegramId, String text, List<InlineButton> buttons) {
+    public void send(long telegramId, String text, List<List<InlineButton>> buttons) {
         beforeSend.accept(telegramId);
         if (failing.contains(telegramId)) {
             throw new IllegalStateException("Telegram is down");

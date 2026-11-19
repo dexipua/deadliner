@@ -62,8 +62,8 @@ class ReminderJobIT {
 
         assertThat(notifier.sent).hasSize(1);
         assertThat(notifier.sent.getFirst().text()).contains("Essay").contains("Quiz");
-        assertThat(notifier.sent.getFirst().buttons()).hasSize(4); // done + snooze per deadline
-        assertThat(notifier.sent.getFirst().buttons().getFirst().callbackData()).startsWith("done:");
+        assertThat(notifier.sent.getFirst().buttons()).hasSize(2); // a row of done + snooze per deadline
+        assertThat(notifier.sent.getFirst().buttons().getFirst().getFirst().callbackData()).startsWith("done:");
     }
 
     @Test

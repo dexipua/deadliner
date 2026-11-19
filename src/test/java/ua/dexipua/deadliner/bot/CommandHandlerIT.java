@@ -74,17 +74,25 @@ class CommandHandlerIT {
     }
 
     @Test
-    void startExplainsHowToGetTheLink() {
+    void startIsShortAndOffersHelpButton() {
         BotReply reply = handler.handle(ME, "/start");
 
+        assertThat(reply.buttons().getFirst().getFirst().callbackData()).isEqualTo("help:link");
+    }
+
+    @Test
+    void helpButtonExplainsHowToGetTheLinkEvenBeforeConnecting() {
+        BotReply reply = handler.handleCallback(ME, "help:link");
+
         assertThat(reply.text()).contains("Експорт").contains("Отримати URL календаря");
+        assertThat(reply.mode()).isEqualTo(BotReply.Mode.SEND);
     }
 
     @Test
     void randomTextGetsAHint() {
         BotReply reply = handler.handle(ME, "привіт");
 
-        assertThat(reply.text()).contains("/start");
+        assertThat(reply.text()).contains("/help");
         assertThat(reply.deleteUserMessage()).isFalse();
     }
 
@@ -110,7 +118,7 @@ class CommandHandlerIT {
     void invalidLinkWithTokenIsStillDeleted() {
         BotReply reply = handler.handle(ME, "ось: " + URL.replace("https://", "http://"));
 
-        assertThat(reply.text()).contains("/start");
+        assertThat(reply.text()).contains("/help");
         assertThat(reply.deleteUserMessage()).isTrue();
     }
 
@@ -155,6 +163,7 @@ class CommandHandlerIT {
         BotReply reply = handler.handleCallback(ME, "snooze:" + id);
 
         assertThat(reply.text()).contains("15:00"); // NOW 12:00Z = 14:00 Kyiv, +1 h
+        assertThat(reply.mode()).isEqualTo(BotReply.Mode.TOAST);
         assertThat(jdbc.queryForObject("select count(*) from snooze where deadline_id = ?", Integer.class, id)).isEqualTo(1);
     }
 
@@ -190,7 +199,7 @@ class CommandHandlerIT {
 
     @Test
     void deadlinesBeforeConnectingAsksToConnect() {
-        assertThat(handler.handle(ME, "/deadlines").text()).contains("/start");
+        assertThat(handler.handle(ME, "/deadlines").text()).contains("/help");
     }
 
     @Test
@@ -207,9 +216,11 @@ class CommandHandlerIT {
         handler.handle(ME, URL);
         long id = deadline(ME, "1003@teaching.kse.org.ua").getId();
 
-        handler.handleCallback(ME, "done:" + id);
+        BotReply reply = handler.handleCallback(ME, "done:" + id);
 
         assertThat(deadline(ME, "1003@teaching.kse.org.ua").getStatus()).isEqualTo(DeadlineStatus.DONE);
+        assertThat(reply.mode()).isEqualTo(BotReply.Mode.TOAST);
+        assertThat(reply.clearButtonsFor()).isEqualTo(id);
     }
 
     @Test
@@ -227,9 +238,10 @@ class CommandHandlerIT {
     void settingsButtonTogglesAnOffset() {
         handler.handle(ME, URL);
 
-        handler.handleCallback(ME, "offset:180");
+        BotReply reply = handler.handleCallback(ME, "offset:180");
 
         assertThat(settings.offsets(userId(ME))).containsExactlyInAnyOrder(4320, 1440);
+        assertThat(reply.mode()).isEqualTo(BotReply.Mode.EDIT);
     }
 
     @Test
@@ -238,10 +250,20 @@ class CommandHandlerIT {
 
         BotReply ask = handler.handle(ME, "/stop");
         assertThat(users.findByTelegramId(ME)).isPresent();
-        handler.handleCallback(ME, ask.buttons().getFirst().callbackData());
+        handler.handleCallback(ME, ask.buttons().getFirst().getFirst().callbackData());
 
         assertThat(users.findByTelegramId(ME)).isEmpty();
         assertThat(deadlines.count()).isZero();
+    }
+
+    @Test
+    void stopCanBeCancelled() {
+        handler.handle(ME, URL);
+
+        BotReply reply = handler.handleCallback(ME, "stop:cancel");
+
+        assertThat(reply.mode()).isEqualTo(BotReply.Mode.EDIT);
+        assertThat(users.findByTelegramId(ME)).isPresent();
     }
 
     @Test

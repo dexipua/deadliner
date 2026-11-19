@@ -1,45 +1,61 @@
 package ua.dexipua.deadliner.bot;
 
-/** Fixed bot texts, in one place so they are easy to review and edit. */
+/** Fixed bot texts (Telegram HTML), in one place so they are easy to review and edit. */
 final class Texts {
 
     static final String START = """
-            👋 Привіт! Я Deadliner — нагадую про дедлайни з Moodle KSE.
+            👋 <b>Привіт! Я Deadliner.</b>
 
-            Як підключити (1 хвилина):
-            1. Відкрий Moodle → Календар → «Експорт календаря».
-            2. Обери «Усі події» та «Нещодавні та наступні 60 днів».
-            3. Натисни «Отримати URL календаря» і скопіюй посилання.
-            4. Надішли його сюди.
+            Нагадую про дедлайни з Moodle KSE, щоб ти нічого не проґавив.
 
-            🔒 Приватність: посилання містить твій особистий ключ доступу до календаря Moodle (не пароль). \
-            Я зберігаю його зашифрованим, видаляю твоє повідомлення з ним із чату і бачу лише дедлайни. \
-            /stop — видалити всі твої дані.
+            Щоб почати, надішли мені посилання на свій календар Moodle. \
+            Як його отримати — натисни кнопку нижче, це 1 хвилина.""";
+    static final String HELP_BUTTON = "📖 Як отримати посилання";
+    static final String HOW_TO_CONNECT = """
+            📖 <b>Як підключити Moodle</b>
 
-            Команди: /deadlines — дедлайни на 7 днів, /group — твоя група, /stats — статистика, /settings — нагадування, /stop — видалити дані.""";
+            1. Відкрий Moodle → <b>Календар</b> → <b>Експорт календаря</b>
+            2. Обери <b>«Усі події»</b> і <b>«Нещодавні та наступні 60 днів»</b>
+            3. Натисни <b>«Отримати URL календаря»</b> і скопіюй посилання
+            4. Надішли його сюди
 
-    static final String NOT_A_LINK =
-            "Не схоже на посилання з календаря Moodle KSE 🤔 Як його отримати — дивись /start.";
-    static final String NOT_CONNECTED = "Спершу підключи календар Moodle — інструкція в /start.";
+            🔒 <i>Посилання — це ключ до твого календаря Moodle (не пароль). \
+            Я зберігаю його зашифрованим і одразу видаляю твоє повідомлення з чату. \
+            /stop — видалити всі твої дані.</i>""";
+
+    static final String NOT_A_LINK = "🤔 Не схоже на посилання з календаря Moodle KSE. Як його отримати — /help";
+    static final String NOT_CONNECTED = "Спершу підключи календар Moodle — /help";
+    static final String NOT_CONNECTED_SHORT = "Спершу підключи Moodle — /help";
     static final String FEED_UNREACHABLE = """
-            😕 Не вдалося прочитати календар за цим посиланням. Можливо, воно застаріло.
-            Отримай нове посилання в Moodle (інструкція в /start) і надішли ще раз.""";
-    static final String CONNECTED = "✅ Підключено! Знайшов дедлайнів попереду: %d.";
-    static final String NEAREST = "\nНайближчий: %s";
-    static final String CONNECTED_FOOTER =
-            "\n\nНагадаю за 3 дні, за 1 день і за 3 години, а в неділю о 19:00 надішлю план на тиждень. Змінити — /settings.";
-    static final String STOP_CONFIRM = "Видалити всі твої дані (посилання, дедлайни, налаштування)? Це не можна скасувати.";
-    static final String STOP_BUTTON = "🗑 Так, видалити";
-    static final String STOPPED = "Готово, усі твої дані видалено. Щоб почати знову — /start.";
-    static final String SNOOZED = "⏰ Нагадаю ще раз о %s: %s";
-    static final String DONE = "✅ Позначено як здане: %s";
-    static final String DEADLINE_NOT_FOUND = "Не знайшов цей дедлайн — можливо, його вже прибрали.";
+            😕 <b>Не вдалося прочитати календар</b>
+
+            Можливо, посилання застаріло. Отримай нове в Moodle (/help) і надішли ще раз.""";
+    static final String CONNECTED = "✅ <b>Готово, Moodle підключено!</b>\nДедлайнів попереду: <b>%d</b>";
+    static final String NEAREST = "\n\nНайближчий:\n";
+    static final String CONNECTED_FOOTER = """
+
+
+            Нагадаю за 3 дні, за 1 день і за 3 години, а в неділю о 19:00 надішлю план на тиждень.
+            Змінити — /settings""";
     static final String GROUP_HINT =
-            "\n\n👥 Бачу квізи для різних груп. Напиши /group 5 (свій номер), і я не нагадуватиму про чужі.";
-    static final String GROUP_SET = "👥 Готово: показую квізи лише групи %d. Скинути — /group";
+            "\n\n👥 Бачу квізи для різних груп. Напиши <b>/group 5</b> (свій номер), і я не нагадуватиму про чужі.";
+    static final String GROUP_SET = "👥 Готово: показую квізи лише групи <b>%d</b>. Скинути — /group";
     static final String GROUP_CLEARED = "👥 Показую квізи всіх груп.";
-    static final String GROUP_USAGE = "Напиши номер своєї групи, наприклад: /group 5";
-    static final String SETTINGS = "⚙️ Налаштування. Натисни, щоб увімкнути або вимкнути:";
+    static final String GROUP_USAGE = "Напиши номер своєї групи, наприклад: <b>/group 5</b>";
+
+    static final String SETTINGS = "⚙️ <b>Налаштування</b>\n\nНатисни, щоб увімкнути або вимкнути:";
+    static final String STOP_CONFIRM =
+            "🗑 <b>Видалити всі твої дані?</b>\n\nПосилання, дедлайни й налаштування зникнуть назавжди.";
+    static final String STOP_BUTTON = "Так, видалити";
+    static final String STOP_CANCEL_BUTTON = "Скасувати";
+    static final String STOPPED = "Готово, усі твої дані видалено. Щоб почати знову — /start";
+    static final String STOP_CANCELLED = "👌 Добре, нічого не видаляю.";
+
+    // toasts: short plain text, shown as a pop-up
+    static final String SNOOZED = "⏰ Нагадаю ще раз о %s";
+    static final String DONE = "✅ Здано: %s";
+    static final String DEADLINE_NOT_FOUND = "Не знайшов цей дедлайн — можливо, його вже прибрали";
+    static final String UNKNOWN_BUTTON = "Ця кнопка вже не працює";
 
     private Texts() {
     }

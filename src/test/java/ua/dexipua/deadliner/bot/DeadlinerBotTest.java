@@ -46,7 +46,7 @@ class DeadlinerBotTest {
 
     @Test
     void replyIsSentForNormalMessage() throws Exception {
-        when(handler.handle(anyLong(), anyString())).thenReturn(new BotReply("hi", List.of(), false));
+        when(handler.handle(anyLong(), anyString())).thenReturn(BotReply.of("hi"));
 
         bot.consume(List.of(message("/start")));
 

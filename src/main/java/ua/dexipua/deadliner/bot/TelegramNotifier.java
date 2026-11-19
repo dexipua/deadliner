@@ -1,5 +1,6 @@
 package ua.dexipua.deadliner.bot;
 
+import org.telegram.telegrambots.meta.api.methods.ParseMode;
 import org.telegram.telegrambots.meta.api.methods.send.SendMessage;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
@@ -10,7 +11,7 @@ import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.List;
 
-/** Sends messages through the Telegram Bot API; one button per row. */
+/** Sends HTML messages through the Telegram Bot API. */
 public class TelegramNotifier implements Notifier {
 
     private static final int FORBIDDEN = 403;
@@ -22,13 +23,9 @@ public class TelegramNotifier implements Notifier {
     }
 
     @Override
-    public void send(long telegramId, String text, List<InlineButton> buttons) {
-        SendMessage.SendMessageBuilder<?, ?> message = SendMessage.builder().chatId(telegramId).text(text);
-        if (!buttons.isEmpty()) {
-            message.replyMarkup(keyboard(buttons));
-        }
+    public void send(long telegramId, String html, List<List<InlineButton>> buttons) {
         try {
-            client.execute(message.build());
+            client.execute(message(telegramId, html, buttons));
         } catch (TelegramApiRequestException e) {
             if (e.getErrorCode() != null && e.getErrorCode() == FORBIDDEN) {
                 throw new UserBlockedException(telegramId);
@@ -39,13 +36,25 @@ public class TelegramNotifier implements Notifier {
         }
     }
 
-    static InlineKeyboardMarkup keyboard(List<InlineButton> buttons) {
-        List<InlineKeyboardRow> rows = buttons.stream()
-                .map(b -> new InlineKeyboardRow(InlineKeyboardButton.builder()
-                        .text(b.text())
-                        .callbackData(b.callbackData())
-                        .build()))
-                .toList();
-        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    static SendMessage message(long chatId, String html, List<List<InlineButton>> buttons) {
+        SendMessage.SendMessageBuilder<?, ?> message = SendMessage.builder()
+                .chatId(chatId)
+                .text(html)
+                .parseMode(ParseMode.HTML)
+                .disableWebPagePreview(true);
+        if (!buttons.isEmpty()) {
+            message.replyMarkup(keyboard(buttons));
+        }
+        return message.build();
+    }
+
+    static InlineKeyboardMarkup keyboard(List<List<InlineButton>> rows) {
+        return InlineKeyboardMarkup.builder()
+                .keyboard(rows.stream()
+                        .map(row -> new InlineKeyboardRow(row.stream()
+                                .map(b -> InlineKeyboardButton.builder().text(b.text()).callbackData(b.callbackData()).build())
+                                .toList()))
+                        .toList())
+                .build();
     }
 }

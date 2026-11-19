@@ -1,6 +1,11 @@
 package ua.dexipua.deadliner.bot;
 
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.telegram.telegrambots.meta.api.methods.commands.SetMyCommands;
+import org.telegram.telegrambots.meta.api.objects.commands.BotCommand;
+
+import java.util.List;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +38,22 @@ public class TelegramConfig {
             throws TelegramApiException {
         TelegramBotsLongPollingApplication app = new TelegramBotsLongPollingApplication();
         app.registerBot(token, new DeadlinerBot(handler, client));
+        registerCommandMenu(client);
         return app;
+    }
+
+    /** The ☰ menu next to the message field. */
+    private static void registerCommandMenu(TelegramClient client) {
+        try {
+            client.execute(SetMyCommands.builder().commands(List.of(
+                    new BotCommand("deadlines", "Дедлайни на 7 днів"),
+                    new BotCommand("stats", "Моя статистика"),
+                    new BotCommand("settings", "Нагадування й тихі години"),
+                    new BotCommand("group", "Моя група (напр. /group 1)"),
+                    new BotCommand("help", "Як підключити Moodle"),
+                    new BotCommand("stop", "Видалити мої дані"))).build());
+        } catch (TelegramApiException e) {
+            LoggerFactory.getLogger(TelegramConfig.class).warn("Could not set the command menu: {}", e.getMessage());
+        }
     }
 }

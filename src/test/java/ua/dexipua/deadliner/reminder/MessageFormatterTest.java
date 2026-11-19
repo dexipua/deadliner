@@ -1,6 +1,8 @@
 package ua.dexipua.deadliner.reminder;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
+import ua.dexipua.deadliner.bot.InlineButton;
 import ua.dexipua.deadliner.deadline.Deadline;
 
 import java.time.Instant;
@@ -10,67 +12,121 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class MessageFormatterTest {
 
+    // Thursday 19 Nov 2026, 23:59 Kyiv (UTC+2)
+    static final Instant NOW = Instant.parse("2026-11-19T21:59:00Z");
+
     private final MessageFormatter formatter = new MessageFormatter();
 
-    private static Deadline deadline(String course, String title, String dueAt) {
+    private static Deadline deadline(long id, String course, String title, String dueAt) {
         Deadline d = new Deadline(1L, title);
+        ReflectionTestUtils.setField(d, "id", id);
         d.setCourseName(course);
         d.setTitle(title);
         d.setDueAt(Instant.parse(dueAt));
         return d;
     }
 
-    @Test
-    void reminderLineUsesKyivTimeAndShortCourseName() {
-        String text = formatter.reminder(List.of(
-                deadline("CS201 (2026-2027)", "Assignment 3", "2026-11-20T21:59:00Z")));
-
-        assertThat(text).contains("Пт 20.11, 23:59 — CS201: Assignment 3");
+    private static Deadline assignment() {
+        return deadline(7, "CS201 (2026-2027)", "Assignment 3 - API & Trading", "2026-11-20T21:59:00Z");
     }
 
     @Test
-    void reminderWithoutCourseShowsOnlyTitle() {
-        String text = formatter.reminder(List.of(deadline(null, "Зустріч", "2026-11-20T21:59:00Z")));
+    void singleReminderHasHeadlineCourseTitleAndRelativeTime() {
+        String text = formatter.reminder(List.of(assignment()), NOW);
 
-        assertThat(text).contains("Пт 20.11, 23:59 — Зустріч");
+        assertThat(text)
+                .contains("<b>Дедлайн через 1 день</b>")
+                .contains("📘 <b>CS201</b>")
+                .contains("Assignment 3 - API &amp; Trading")
+                .contains("пт, 20 листопада · 23:59");
     }
 
     @Test
-    void summerTimeIsUtcPlusThree() {
-        String text = formatter.reminder(List.of(deadline(null, "Exam", "2027-03-28T20:59:00Z")));
-
-        assertThat(text).contains("Нд 28.03, 23:59 — Exam");
+    void reminderJustAfterSendTimeStillSaysOneDay() {
+        assertThat(formatter.reminder(List.of(assignment()), NOW.plusSeconds(40))).contains("через 1 день");
     }
 
     @Test
-    void winterTimeIsUtcPlusTwo() {
-        String text = formatter.reminder(List.of(deadline(null, "Exam", "2026-12-01T21:59:00Z")));
-
-        assertThat(text).contains("Вт 01.12, 23:59 — Exam");
+    void threeHourReminderSaysThreeHours() {
+        assertThat(formatter.reminder(List.of(assignment()), Instant.parse("2026-11-20T18:59:00Z")))
+                .contains("через 3 години");
     }
 
     @Test
-    void emptyDigestGivesNoMessage() {
-        assertThat(formatter.digest(List.of())).isEmpty();
+    void ukrainianPluralsForDays() {
+        assertThat(formatter.relative(Instant.parse("2026-11-24T21:59:00Z"), NOW)).isEqualTo("через 5 днів");
+        assertThat(formatter.relative(Instant.parse("2026-11-22T21:59:00Z"), NOW)).isEqualTo("через 3 дні");
+        assertThat(formatter.relative(NOW.plusSeconds(25 * 60), NOW)).isEqualTo("через 25 хв");
     }
 
     @Test
-    void digestListsTheWeek() {
-        assertThat(formatter.digest(List.of(deadline("CS201 (2026-2027)", "A3", "2026-11-20T21:59:00Z"))))
-                .get().asString().contains("тиждень").contains("CS201: A3");
+    void titlesFromMoodleAreHtmlEscaped() {
+        String text = formatter.reminder(List.of(deadline(1, null, "<script>x</script>", "2026-11-20T21:59:00Z")), NOW);
+
+        assertThat(text).contains("&lt;script&gt;").doesNotContain("<script>");
+    }
+
+    @Test
+    void singleReminderButtonsAreOneCompactRow() {
+        List<List<InlineButton>> rows = formatter.reminderButtons(List.of(assignment()));
+
+        assertThat(rows).containsExactly(List.of(
+                new InlineButton("✅ Здано", "done:7"), new InlineButton("⏰ +1 год", "snooze:7")));
+    }
+
+    @Test
+    void severalRemindersAreNumberedWithARowEach() {
+        Deadline later = deadline(8, "MATH101 (2026-2027)", "Mind Map 3", "2026-11-21T21:59:00Z");
+
+        String text = formatter.reminder(List.of(later, assignment()), NOW);
+        List<List<InlineButton>> rows = formatter.reminderButtons(List.of(later, assignment()));
+
+        assertThat(text).contains("<b>Наближаються дедлайни</b>");
+        assertThat(text.indexOf("1. ")).isLessThan(text.indexOf("Assignment 3"));
+        assertThat(rows).hasSize(2);
+        assertThat(rows.getFirst()).extracting(InlineButton::text).containsExactly("✅ 1. Здано", "⏰ 1. +1 год");
+        assertThat(rows.getFirst().getFirst().callbackData()).isEqualTo("done:7");
+    }
+
+    @Test
+    void listGroupsByDayWithTodayAndTomorrow() {
+        Deadline today = deadline(1, "ENG121 (2026-2027)", "HW1", "2026-11-19T21:59:30Z");
+        Deadline nextWeek = deadline(3, null, "Essay", "2026-11-23T21:59:00Z");
+
+        String text = formatter.list(List.of(nextWeek, assignment(), today), Instant.parse("2026-11-19T10:00:00Z"));
+
+        assertThat(text).contains("<b>Сьогодні</b>").contains("<b>Завтра</b>").contains("<b>Пн, 23 листопада</b>");
+        assertThat(text).contains("• <b>23:59</b> · CS201 — Assignment 3 - API &amp; Trading");
+        assertThat(text.indexOf("Сьогодні")).isLessThan(text.indexOf("Завтра"));
     }
 
     @Test
     void emptyListSaysNothingIsDue() {
-        assertThat(formatter.list(List.of())).contains("немає");
+        assertThat(formatter.list(List.of(), NOW)).contains("немає");
     }
 
     @Test
-    void reminderListsDeadlinesInDueOrder() {
-        String text = formatter.reminder(List.of(
-                deadline("B", "later", "2026-11-22T10:00:00Z"),
-                deadline("A", "sooner", "2026-11-21T10:00:00Z")));
+    void emptyDigestGivesNoMessage() {
+        assertThat(formatter.digest(List.of(), NOW)).isEmpty();
+    }
 
-        assertThat(text.indexOf("sooner")).isLessThan(text.indexOf("later"));
+    @Test
+    void digestHasTitleAndDays() {
+        assertThat(formatter.digest(List.of(assignment()), NOW)).get().asString()
+                .contains("План на тиждень").contains("Завтра").contains("CS201");
+    }
+
+    @Test
+    void summerTimeIsShownInKyivTime() {
+        Deadline exam = deadline(1, null, "Exam", "2027-03-28T20:59:00Z");
+
+        assertThat(formatter.reminder(List.of(exam), Instant.parse("2027-03-27T20:59:00Z"))).contains("нд, 28 березня · 23:59");
+    }
+
+    @Test
+    void winterTimeIsShownInKyivTime() {
+        Deadline exam = deadline(1, null, "Exam", "2026-12-01T21:59:00Z");
+
+        assertThat(formatter.reminder(List.of(exam), NOW)).contains("вт, 1 грудня · 23:59");
     }
 }

@@ -148,6 +148,16 @@ class CommandHandlerIT {
     }
 
     @Test
+    void statsShowsCountsPerCourse() {
+        handler.handle(ME, URL);
+        handler.handleCallback(ME, "done:" + deadline(ME, "1003@teaching.kse.org.ua").getId());
+
+        String text = handler.handle(ME, "/stats").text();
+
+        assertThat(text).contains("TEST201").contains("TEST101");
+    }
+
+    @Test
     void deadlinesBeforeConnectingAsksToConnect() {
         assertThat(handler.handle(ME, "/deadlines").text()).contains("/start");
     }

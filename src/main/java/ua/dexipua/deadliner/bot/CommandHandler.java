@@ -5,6 +5,7 @@ import ua.dexipua.deadliner.deadline.Deadline;
 import ua.dexipua.deadliner.deadline.DeadlineRepository;
 import ua.dexipua.deadliner.deadline.DeadlineStatus;
 import ua.dexipua.deadliner.deadline.GroupFilter;
+import ua.dexipua.deadliner.deadline.Stats;
 import ua.dexipua.deadliner.feed.FeedSyncService;
 import ua.dexipua.deadliner.feed.FeedSyncService.ConnectResult;
 import ua.dexipua.deadliner.feed.FeedUrlValidator;
@@ -54,6 +55,11 @@ public class CommandHandler {
         return switch (command) {
             case "/start" -> BotReply.of(Texts.START);
             case "/deadlines" -> deadlinesCommand(telegramId);
+            case "/stats" -> user(telegramId)
+                    .map(u -> BotReply.of(formatter.stats(Stats.of(deadlines.findByUserId(u.getId()).stream()
+                            .filter(d -> GroupFilter.visible(d, u.getSeminarGroup()))
+                            .toList(), clock.instant()))))
+                    .orElse(BotReply.of(Texts.NOT_CONNECTED));
             case "/settings" -> user(telegramId).map(this::settingsReply).orElse(BotReply.of(Texts.NOT_CONNECTED));
             case "/stop" -> BotReply.withButtons(Texts.STOP_CONFIRM,
                     List.of(new InlineButton(Texts.STOP_BUTTON, STOP_CONFIRMED)));

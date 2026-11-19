@@ -2,6 +2,7 @@ package ua.dexipua.deadliner.reminder;
 
 import org.springframework.stereotype.Component;
 import ua.dexipua.deadliner.deadline.Deadline;
+import ua.dexipua.deadliner.deadline.Stats;
 
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -40,6 +41,27 @@ public class MessageFormatter {
             return "🎉 На найближчі 7 днів дедлайнів немає.";
         }
         return "📋 Дедлайни на 7 днів:\n\n" + lines(deadlines);
+    }
+
+    /** Answer to /stats. */
+    public String stats(Stats stats) {
+        if (stats.byCourse().isEmpty()) {
+            return "📊 Поки що немає даних для статистики.";
+        }
+        StringBuilder text = new StringBuilder("📊 Твоя статистика\n\n").append(counts(stats.total()));
+        Integer percent = stats.total().onTimePercent();
+        if (percent != null) {
+            text.append("\nВчасно здано: ").append(percent).append('%');
+        }
+        text.append("\n\nПо курсах:");
+        stats.byCourse().forEach((course, c) ->
+                text.append("\n• ").append(ACADEMIC_YEAR.matcher(course).replaceAll("")).append(" — ").append(counts(c)));
+        text.append("\n\n«Здано» рахується, коли ти натискаєш ✅ під нагадуванням.");
+        return text.toString();
+    }
+
+    private static String counts(Stats.Counts c) {
+        return "✅ " + c.onTime() + " · ⏰ " + c.late() + " · ❌ " + c.overdue() + " · 🔜 " + c.upcoming();
     }
 
     private String lines(List<Deadline> deadlines) {

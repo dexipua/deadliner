@@ -64,6 +64,7 @@ class FeedSyncServiceIT {
     void clean() {
         jdbc.execute("truncate app_user cascade");
         fetcher.bodies.clear();
+        fetcher.errors.clear();
         fetcher.bodies.put(URI.create(URL), StubFeedFetcher.fixture());
         notifier.reset();
     }
@@ -195,6 +196,67 @@ class FeedSyncServiceIT {
 
         assertThat(notifier.sent).hasSize(1);
         assertThat(notifier.sent.getFirst().telegramId()).isEqualTo(TG);
+    }
+
+    @Test
+    void moodleOutageDoesNotTellUsersTheirLinkIsBroken() {
+        service.connect(TG, URL);
+        fetcher.errors.put(URI.create(URL), new java.io.IOException("Moodle did not answer in 20 s"));
+
+        for (int i = 0; i < 4; i++) {
+            job.runOnce(NOW);
+        }
+
+        assertThat(notifier.sent).isEmpty();
+        assertThat(feeds.findById(feedId()).orElseThrow().getConsecutiveFailures()).isZero();
+    }
+
+    @Test
+    void rejectedLinkCountsTowardTheWarning() {
+        service.connect(TG, URL);
+        fetcher.errors.put(URI.create(URL), new FeedRejectedException("Moodle answered HTTP 404"));
+
+        for (int i = 0; i < 3; i++) {
+            job.runOnce(NOW);
+        }
+
+        assertThat(notifier.sent).hasSize(1);
+    }
+
+    @Test
+    void oneBrokenFeedDoesNotStopSyncForOthers() {
+        String other = URL.replace("secret777", "secret888");
+        fetcher.bodies.put(URI.create(other), StubFeedFetcher.fixture());
+        service.connect(TG, URL);
+        service.connect(TG + 1, other);
+        fetcher.bodies.put(URI.create(other), StubFeedFetcher.fixture()
+                .replace("DTSTART:20261127T215900Z", "DTSTART:20261129T215900Z"));
+        fetcher.errors.put(URI.create(URL), new IllegalStateException("parser bug"));
+
+        job.runOnce(NOW);
+
+        long otherUser = users.findByTelegramId(TG + 1).orElseThrow().getId();
+        assertThat(deadlines.findByUserId(otherUser)).filteredOn(d -> d.getExternalUid().equals("1003@teaching.kse.org.ua"))
+                .extracting(Deadline::getDueAt).containsExactly(Instant.parse("2026-11-29T21:59:00Z"));
+    }
+
+    @Test
+    void telegramErrorDuringWarningDoesNotStopTheJob() {
+        String other = URL.replace("secret777", "secret888");
+        fetcher.bodies.put(URI.create(other), "Invalid authentication");
+        fetcher.bodies.put(URI.create(URL), StubFeedFetcher.fixture());
+        service.connect(TG, URL);
+        fetcher.bodies.put(URI.create(other), StubFeedFetcher.fixture());
+        service.connect(TG + 1, other);
+        fetcher.bodies.put(URI.create(URL), "Invalid authentication");
+        fetcher.bodies.put(URI.create(other), "Invalid authentication");
+        notifier.failing.add(TG);
+
+        for (int i = 0; i < 3; i++) {
+            job.runOnce(NOW);
+        }
+
+        assertThat(notifier.sent).extracting(RecordingNotifier.Sent::telegramId).containsExactly(TG + 1);
     }
 
     @Test

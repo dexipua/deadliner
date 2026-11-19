@@ -56,17 +56,25 @@ public class ReminderJob {
         Map<Long, List<Deadline>> byUser = deadlines.findUpcomingOpenOfActiveUsers(now).stream()
                 .collect(Collectors.groupingBy(Deadline::getUserId, LinkedHashMap::new, Collectors.toList()));
         for (Map.Entry<Long, List<Deadline>> entry : byUser.entrySet()) {
-            List<Deadline> open = entry.getValue();
-            var sent = sentReminders.findFor(open.stream().map(Deadline::getId).toList());
-            List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now);
-            if (!due.isEmpty()) {
-                send(entry.getKey(), due, now);
+            // one user's failure (e.g. deleted via /stop mid-run) must not skip everyone after them
+            try {
+                List<Deadline> open = entry.getValue();
+                var sent = sentReminders.findFor(open.stream().map(Deadline::getId).toList());
+                List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now);
+                if (!due.isEmpty()) {
+                    send(entry.getKey(), due, now);
+                }
+            } catch (RuntimeException e) {
+                log.error("Reminders failed for user {}", entry.getKey(), e);
             }
         }
     }
 
     private void send(long userId, List<DueReminder> due, Instant now) {
-        AppUser user = users.findById(userId).orElseThrow();
+        AppUser user = users.findById(userId).orElse(null);
+        if (user == null) {
+            return;
+        }
         List<Deadline> distinct = due.stream().map(DueReminder::deadline).distinct().toList();
         List<InlineButton> buttons = distinct.stream()
                 .map(d -> new InlineButton("✅ Здано: " + shorten(d.getTitle()), "done:" + d.getId()))

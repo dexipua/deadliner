@@ -74,6 +74,21 @@ class ReminderJobIT {
     }
 
     @Test
+    void userDeletedMidJobDoesNotStopRemindersForOthers() {
+        AppUser leaving = userWithTwoDeadlinesDueTomorrow(500L);
+        userWithTwoDeadlinesDueTomorrow(600L);
+        notifier.beforeSend = telegramId -> {
+            if (telegramId == 500L) {
+                users.deleteById(leaving.getId()); // the user hits /stop while the job is sending
+            }
+        };
+
+        job.runOnce(NOW);
+
+        assertThat(notifier.sent).extracting(RecordingNotifier.Sent::telegramId).contains(600L);
+    }
+
+    @Test
     void blockedUserIsDeactivatedAndOthersStillGetReminders() {
         userWithTwoDeadlinesDueTomorrow(500L);
         userWithTwoDeadlinesDueTomorrow(600L);

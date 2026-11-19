@@ -78,4 +78,8 @@ public class CalendarFeed {
         lastStatus = status;
         consecutiveFailures++;
     }
+
+    public void recordUnavailable(String status) {
+        lastStatus = status;
+    }
 }

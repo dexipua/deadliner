@@ -47,7 +47,12 @@ public class FeedSyncService {
         record Ok(int added, int updated, int gone) implements SyncOutcome {
         }
 
+        /** The link itself looks broken (bad token, 4xx). */
         record Failed(int consecutiveFailures) implements SyncOutcome {
+        }
+
+        /** Moodle is down or slow; says nothing about the link, so it does not count toward the warning. */
+        record Unavailable() implements SyncOutcome {
         }
     }
 
@@ -118,11 +123,15 @@ public class FeedSyncService {
                 feeds.save(feed);
                 return outcome;
             });
-        } catch (IOException | InvalidFeedException e) {
+        } catch (FeedRejectedException | InvalidFeedException e) {
             // never log the URL: it contains the user's token
             feed.recordFailure(e.getClass().getSimpleName() + ": " + e.getMessage());
             feeds.save(feed);
             return new SyncOutcome.Failed(feed.getConsecutiveFailures());
+        } catch (IOException e) {
+            feed.recordUnavailable("Moodle unavailable: " + e.getMessage());
+            feeds.save(feed);
+            return new SyncOutcome.Unavailable();
         }
     }
 

@@ -15,9 +15,18 @@ import java.util.regex.Pattern;
 public class StubFeedFetcher implements FeedFetcher {
 
     public final Map<URI, String> bodies = new HashMap<>();
+    /** Thrown instead of a body, e.g. a timeout (IOException) or a bug (RuntimeException). */
+    public final Map<URI, Exception> errors = new HashMap<>();
 
     @Override
     public InputStream fetch(URI uri) throws IOException {
+        Exception error = errors.get(uri);
+        if (error instanceof IOException io) {
+            throw io;
+        }
+        if (error instanceof RuntimeException runtime) {
+            throw runtime;
+        }
         String body = bodies.get(uri);
         if (body == null) {
             throw new IOException("no stub for " + uri);

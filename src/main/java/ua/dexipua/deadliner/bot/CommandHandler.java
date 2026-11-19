@@ -103,6 +103,9 @@ public class CommandHandler {
         if (data.startsWith("done:")) {
             return markDone(user.get(), data.substring("done:".length()));
         }
+        if (data.startsWith("undo:")) {
+            return undoDone(user.get(), data.substring("undo:".length()));
+        }
         if (data.startsWith("snooze:")) {
             return snooze(user.get(), data.substring("snooze:".length()));
         }
@@ -237,6 +240,19 @@ public class CommandHandler {
             deadlines.save(d);
         }
         return BotReply.toast(Texts.DONE.formatted(formatter.label(d)), d.getId());
+    }
+
+    private BotReply undoDone(AppUser user, String rawId) {
+        Optional<Deadline> deadline = ownDeadline(user, rawId);
+        if (deadline.isEmpty()) {
+            return BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
+        }
+        Deadline d = deadline.get();
+        if (d.getStatus() == DeadlineStatus.DONE) {
+            d.reopen();
+            deadlines.save(d);
+        }
+        return BotReply.toast(Texts.UNDONE.formatted(formatter.label(d)), d.getId());
     }
 
     // only the owner may act on a deadline, whatever id the callback carries

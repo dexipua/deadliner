@@ -56,6 +56,7 @@ final class Texts {
     // toasts: short plain text, shown as a pop-up
     static final String SNOOZED = "⏰ Нагадаю ще раз о %s";
     static final String DONE = "✅ Здано: %s";
+    static final String UNDONE = "↩️ Повернув у список: %s";
     static final String DEADLINE_NOT_FOUND = "Не знайшов цей дедлайн — можливо, його вже прибрали";
     static final String UNKNOWN_BUTTON = "Ця кнопка вже не працює";
 

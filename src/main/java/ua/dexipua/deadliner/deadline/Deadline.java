@@ -111,4 +111,10 @@ public class Deadline {
         this.status = DeadlineStatus.DONE;
         this.doneAt = at;
     }
+
+    /** Undo of {@link #markDone}: "✅ Здано" was pressed by mistake. */
+    public void reopen() {
+        this.status = DeadlineStatus.OPEN;
+        this.doneAt = null;
+    }
 }

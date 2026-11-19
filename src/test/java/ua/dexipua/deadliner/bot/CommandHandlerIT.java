@@ -277,7 +277,33 @@ class CommandHandlerIT {
 
         assertThat(deadline(ME, "1003@teaching.kse.org.ua").getStatus()).isEqualTo(DeadlineStatus.DONE);
         assertThat(reply.mode()).isEqualTo(BotReply.Mode.TOAST);
-        assertThat(reply.clearButtonsFor()).isEqualTo(id);
+        assertThat(reply.toggleButtonsFor()).isEqualTo(id);
+    }
+
+    @Test
+    void undoReopensDeadlineMarkedByMistake() {
+        handler.handle(ME, URL);
+        long id = deadline(ME, "1003@teaching.kse.org.ua").getId();
+        handler.handleCallback(ME, "done:" + id);
+
+        BotReply reply = handler.handleCallback(ME, "undo:" + id);
+
+        assertThat(deadline(ME, "1003@teaching.kse.org.ua").getStatus()).isEqualTo(DeadlineStatus.OPEN);
+        assertThat(deadline(ME, "1003@teaching.kse.org.ua").getDoneAt()).isNull();
+        assertThat(reply.mode()).isEqualTo(BotReply.Mode.TOAST);
+        assertThat(reply.toggleButtonsFor()).isEqualTo(id);
+    }
+
+    @Test
+    void undoRefusesSomeoneElsesDeadline() {
+        handler.handle(ME, URL);
+        users.save(new AppUser(OTHER, NOW));
+        long myDeadline = deadline(ME, "1003@teaching.kse.org.ua").getId();
+        handler.handleCallback(ME, "done:" + myDeadline);
+
+        handler.handleCallback(OTHER, "undo:" + myDeadline);
+
+        assertThat(deadline(ME, "1003@teaching.kse.org.ua").getStatus()).isEqualTo(DeadlineStatus.DONE);
     }
 
     @Test

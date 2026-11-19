@@ -12,6 +12,7 @@ import org.telegram.telegrambots.meta.api.objects.CallbackQuery;
 import org.telegram.telegrambots.meta.api.objects.Update;
 import org.telegram.telegrambots.meta.api.objects.message.Message;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMarkup;
+import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
@@ -73,8 +74,13 @@ public class DeadlinerBot implements LongPollingUpdateConsumer {
         switch (reply.mode()) {
             case TOAST -> {
                 client.execute(AnswerCallbackQuery.builder().callbackQueryId(query.getId()).text(reply.text()).build());
-                if (reply.clearButtonsFor() != null && query.getMessage() instanceof Message pressed) {
-                    removeButtonsFor(pressed, reply.clearButtonsFor());
+                if (reply.toggleButtonsFor() != null && query.getMessage() instanceof Message pressed
+                        && pressed.getReplyMarkup() != null) {
+                    client.execute(EditMessageReplyMarkup.builder()
+                            .chatId(pressed.getChatId())
+                            .messageId(pressed.getMessageId())
+                            .replyMarkup(toggleDone(pressed.getReplyMarkup(), reply.toggleButtonsFor()))
+                            .build());
                 }
             }
             case EDIT -> {
@@ -99,23 +105,33 @@ public class DeadlinerBot implements LongPollingUpdateConsumer {
         }
     }
 
-    /** After "✅ Здано", that deadline's buttons disappear from the reminder. */
-    private void removeButtonsFor(Message pressed, long deadlineId) throws TelegramApiException {
-        InlineKeyboardMarkup markup = pressed.getReplyMarkup();
-        if (markup == null) {
-            return;
-        }
+    /**
+     * Flips one deadline's button: "✅ … Здано" (done:id) ⇄ "↩️ … Скасувати" (undo:id).
+     * Its "+1 год" button goes away once it is done. Other deadlines' buttons stay as they are.
+     */
+    static InlineKeyboardMarkup toggleDone(InlineKeyboardMarkup markup, long deadlineId) {
+        String done = "done:" + deadlineId;
+        String undo = "undo:" + deadlineId;
         List<InlineKeyboardRow> rows = markup.getKeyboard().stream()
                 .map(row -> new InlineKeyboardRow(row.stream()
-                        .filter(b -> b.getCallbackData() == null || !b.getCallbackData().endsWith(":" + deadlineId))
+                        .filter(b -> !("snooze:" + deadlineId).equals(b.getCallbackData()))
+                        .map(b -> {
+                            if (done.equals(b.getCallbackData())) {
+                                return button(b.getText().replace("✅", "↩️").replace("Здано", "Скасувати"), undo);
+                            }
+                            if (undo.equals(b.getCallbackData())) {
+                                return button(b.getText().replace("↩️", "✅").replace("Скасувати", "Здано"), done);
+                            }
+                            return b;
+                        })
                         .toList()))
                 .filter(row -> !row.isEmpty())
                 .toList();
-        client.execute(EditMessageReplyMarkup.builder()
-                .chatId(pressed.getChatId())
-                .messageId(pressed.getMessageId())
-                .replyMarkup(InlineKeyboardMarkup.builder().keyboard(rows).build())
-                .build());
+        return InlineKeyboardMarkup.builder().keyboard(rows).build();
+    }
+
+    private static InlineKeyboardButton button(String text, String callbackData) {
+        return InlineKeyboardButton.builder().text(text).callbackData(callbackData).build();
     }
 
     private void delete(Message message) {

@@ -52,6 +52,9 @@ final class Texts {
 
             Відкрий посилання — воно діє 10 хвилин і лише один раз:
             %s""";
+    static final String QUIET_PICK_START = "🌙 <b>Тихі години</b>\n\nЗ котрої години не турбувати? (час київський)";
+    static final String QUIET_PICK_END = "🌙 <b>Тихі години</b>\n\nПочаток — %02d:00. До котрої години?";
+    static final String QUIET_BAD = "Такий час не підходить — обери ще раз";
     static final String SETTINGS = "⚙️ <b>Налаштування</b>\n\nНатисни, щоб увімкнути або вимкнути:";
     static final String STOP_CONFIRM =
             "🗑 <b>Видалити всі твої дані?</b>\n\nПосилання, дедлайни й налаштування зникнуть назавжди.";

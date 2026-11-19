@@ -215,6 +215,36 @@ class CommandHandlerIT {
     }
 
     @Test
+    void quietHoursTimeIsPickedInTwoSteps() {
+        handler.handle(ME, URL);
+
+        BotReply start = handler.handleCallback(ME, "qh:edit");
+        assertThat(start.mode()).isEqualTo(BotReply.Mode.EDIT);
+        assertThat(callbacks(start)).contains("qh:s:22", "qh:s:0");
+
+        BotReply end = handler.handleCallback(ME, "qh:s:22");
+        assertThat(callbacks(end)).contains("qh:e:22:7").doesNotContain("qh:e:22:22");
+
+        BotReply done = handler.handleCallback(ME, "qh:e:22:7");
+        assertThat(done.mode()).isEqualTo(BotReply.Mode.EDIT);
+        AppUser user = users.findByTelegramId(ME).orElseThrow();
+        assertThat(user.getQuietStart()).isEqualTo(22);
+        assertThat(user.getQuietEnd()).isEqualTo(7);
+        assertThat(callbacks(done)).contains("quiet");
+        assertThat(done.buttons().stream().flatMap(List::stream).map(InlineButton::text).toList())
+                .anyMatch(t -> t.contains("22–07"));
+    }
+
+    @Test
+    void forgedQuietHoursAreRefused() {
+        handler.handle(ME, URL);
+
+        assertThat(handler.handleCallback(ME, "qh:e:22:22").mode()).isEqualTo(BotReply.Mode.TOAST);
+        assertThat(handler.handleCallback(ME, "qh:e:99:7").mode()).isEqualTo(BotReply.Mode.TOAST);
+        assertThat(users.findByTelegramId(ME).orElseThrow().getQuietStart()).isEqualTo(23);
+    }
+
+    @Test
     void quietHoursCanBeTurnedOff() {
         handler.handle(ME, URL);
 

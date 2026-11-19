@@ -71,7 +71,8 @@ public class ReminderJob {
                 }
                 List<Deadline> open = GroupFilter.visible(entry.getValue(), courseGroups.of(user.getId()));
                 var sent = sentReminders.findFor(open.stream().map(Deadline::getId).toList());
-                List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now, user.isQuietHours());
+                List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now, user.isQuietHours(),
+                        user.getQuietWindow());
                 Set<Long> snoozed = snoozes.dueAmong(open.stream().map(Deadline::getId).toList(), now);
                 if (!due.isEmpty() || !snoozed.isEmpty()) {
                     send(user, open, due, snoozed, now);

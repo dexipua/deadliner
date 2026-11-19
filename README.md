@@ -9,10 +9,10 @@ You paste your Moodle calendar link once. Deadliner then:
 - shows what is due in the next 7 days with `/deadlines`, plus anything overdue from the last 14 days;
 - lets you tap **✅ Done** (under a reminder or in `/deadlines`) so it stops reminding you, **↩️ Undo** if you tapped it by mistake, or **⏰ +1 hour** to be reminded again later;
 - hides quizzes of other seminar groups: `/group` lets you pick your group in each course with buttons;
-- keeps **quiet hours** (23:00–08:00): night reminders arrive at 08:00 in one message, unless the deadline is before that;
+- keeps **quiet hours** (23:00–08:00 by default, or any hours you choose): reminders that fall inside arrive when they end, in one message, unless the deadline is earlier;
 - shows `/stats`: handed in on time, late, overdue and upcoming, per course.
 
-**Version 1.1.0** — the Telegram bot and a web dashboard (see [CHANGELOG](CHANGELOG.md)).
+**Version 1.2.0** — the Telegram bot and a web dashboard (see [CHANGELOG](CHANGELOG.md)).
 
 ### Web dashboard
 

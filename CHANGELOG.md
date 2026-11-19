@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.2.0 — 2026-11-19
+
+- Quiet hours are now yours to choose: any two whole hours in Kyiv time, across midnight (22–07) or within a day (13–15 during classes). In the bot: /settings → "🕒 Змінити час" (start, then end, edited in place); in the dashboard: "З" and "до" next to the switch. Default stays 23:00–08:00.
+- Bot avatar variants in `docs/brand/`.
+
 ## 1.1.0 — 2026-11-19
 
 Web dashboard.

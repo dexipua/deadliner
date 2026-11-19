@@ -7,6 +7,8 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import ua.dexipua.deadliner.reminder.QuietHours;
+
 import java.time.Instant;
 
 @Entity
@@ -32,6 +34,12 @@ public class AppUser {
 
     @Column(name = "quiet_hours")
     private boolean quietHours = true;
+
+    @Column(name = "quiet_start")
+    private int quietStart = QuietHours.DEFAULT.startHour();
+
+    @Column(name = "quiet_end")
+    private int quietEnd = QuietHours.DEFAULT.endHour();
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
@@ -90,6 +98,23 @@ public class AppUser {
 
     public void setQuietHours(boolean quietHours) {
         this.quietHours = quietHours;
+    }
+
+    public int getQuietStart() {
+        return quietStart;
+    }
+
+    public int getQuietEnd() {
+        return quietEnd;
+    }
+
+    public QuietHours getQuietWindow() {
+        return new QuietHours(quietStart, quietEnd);
+    }
+
+    public void setQuietWindow(QuietHours window) {
+        this.quietStart = window.startHour();
+        this.quietEnd = window.endHour();
     }
 
     public Instant getCreatedAt() {

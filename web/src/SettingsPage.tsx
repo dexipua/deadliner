@@ -2,6 +2,9 @@ import { useRef, useState } from "react";
 import { api, type Me } from "./api";
 import { useLoad } from "./App";
 
+const HOURS = Array.from({ length: 24 }, (_, h) => h);
+const pad = (h: number) => String(h).padStart(2, "0");
+
 const OFFSETS = [
   { minutes: 4320, label: "За 3 дні" },
   { minutes: 1440, label: "За 1 день" },
@@ -22,7 +25,13 @@ export function SettingsPage({ onUnauthorized }: { onUnauthorized: () => void })
     setData(next); // feels instant; the server answer confirms it
     setProblem(null);
     try {
-      const answer = await api.saveSettings({ offsets: next.offsets, digestEnabled: next.digestEnabled, quietHours: next.quietHours });
+      const answer = await api.saveSettings({
+        offsets: next.offsets,
+        digestEnabled: next.digestEnabled,
+        quietHours: next.quietHours,
+        quietStart: next.quietStart,
+        quietEnd: next.quietEnd,
+      });
       // a slower answer to an older click must not undo a newer one
       if (request === latest.current) {
         setData(answer);
@@ -66,11 +75,40 @@ export function SettingsPage({ onUnauthorized }: { onUnauthorized: () => void })
         <Switch id="digest" label="План на тиждень (неділя, 19:00)" checked={data.digestEnabled} onChange={() => save({ ...data, digestEnabled: !data.digestEnabled })} />
         <Switch
           id="quiet"
-          label="Тихі години 23:00–08:00"
-          hint="Нічні нагадування прийдуть о 08:00, якщо дедлайн не раніше."
+          label={`Тихі години ${pad(data.quietStart)}:00–${pad(data.quietEnd)}:00`}
+          hint={`Нагадування з цього часу прийдуть о ${pad(data.quietEnd)}:00, якщо дедлайн не раніше.`}
           checked={data.quietHours}
           onChange={() => save({ ...data, quietHours: !data.quietHours })}
         />
+        {data.quietHours && (
+          <div className="setting hours">
+            <label htmlFor="quiet-start">
+              З
+              <select
+                id="quiet-start"
+                value={data.quietStart}
+                onChange={(e) => {
+                  const start = Number(e.target.value);
+                  // an empty window is not allowed: nudge the end if it would equal the start
+                  save({ ...data, quietStart: start, quietEnd: start === data.quietEnd ? (start + 1) % 24 : data.quietEnd });
+                }}
+              >
+                {HOURS.map((h) => (
+                  <option key={h} value={h}>{pad(h)}:00</option>
+                ))}
+              </select>
+            </label>
+            <label htmlFor="quiet-end">
+              до
+              <select id="quiet-end" value={data.quietEnd} onChange={(e) => save({ ...data, quietEnd: Number(e.target.value) })}>
+                {HOURS.filter((h) => h !== data.quietStart).map((h) => (
+                  <option key={h} value={h}>{pad(h)}:00</option>
+                ))}
+              </select>
+            </label>
+            <span className="fine muted">час київський</span>
+          </div>
+        )}
       </section>
 
       <section className="group">

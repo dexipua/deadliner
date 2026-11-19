@@ -11,6 +11,7 @@ import ua.dexipua.deadliner.feed.FeedSyncService;
 import ua.dexipua.deadliner.feed.FeedSyncService.ConnectResult;
 import ua.dexipua.deadliner.feed.FeedUrlValidator;
 import ua.dexipua.deadliner.reminder.MessageFormatter;
+import ua.dexipua.deadliner.reminder.QuietHours;
 import ua.dexipua.deadliner.reminder.ReminderSettings;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
@@ -111,6 +112,9 @@ public class CommandHandler {
         }
         if (data.startsWith("snooze:")) {
             return snooze(user.get(), data.substring("snooze:".length()));
+        }
+        if (data.startsWith("qh:")) {
+            return quietHoursCallback(user.get(), data);
         }
         if (data.startsWith("offset:")) {
             settings.toggle(user.get().getId(), Integer.parseInt(data.substring("offset:".length())));
@@ -275,7 +279,55 @@ public class CommandHandler {
                         toggle("За 1 день", on.contains(1440), "offset:1440"),
                         toggle("За 3 год", on.contains(180), "offset:180")),
                 List.of(toggle("План на тиждень", user.isDigestEnabled(), "digest")),
-                List.of(toggle("Тихі години 23–08", user.isQuietHours(), "quiet")));
+                List.of(toggle("Тихі години " + user.getQuietWindow().shortLabel(), user.isQuietHours(), "quiet"),
+                        new InlineButton("🕒 Змінити час", "qh:edit")));
+    }
+
+    /** qh:edit → pick the start hour → qh:s:{start} → pick the end hour → qh:e:{start}:{end}. */
+    private BotReply quietHoursCallback(AppUser user, String data) {
+        String[] parts = data.split(":");
+        try {
+            switch (parts[1]) {
+                case "edit" -> {
+                    return BotReply.edit(Texts.QUIET_PICK_START, hourGrid(h -> "qh:s:" + h, -1));
+                }
+                case "s" -> {
+                    int start = Integer.parseInt(parts[2]);
+                    new QuietHours(start, (start + 1) % 24); // validates the start hour
+                    return BotReply.edit(Texts.QUIET_PICK_END.formatted(start), hourGrid(h -> "qh:e:" + start + ":" + h, start));
+                }
+                case "e" -> {
+                    user.setQuietWindow(new QuietHours(Integer.parseInt(parts[2]), Integer.parseInt(parts[3])));
+                    user.setQuietHours(true);
+                    users.save(user);
+                    return BotReply.edit(Texts.SETTINGS, settingsButtons(user));
+                }
+                default -> {
+                    return BotReply.toast(Texts.UNKNOWN_BUTTON, null);
+                }
+            }
+        } catch (RuntimeException forgedOrStale) {
+            return BotReply.toast(Texts.QUIET_BAD, null);
+        }
+    }
+
+    /** 24 hour buttons, 6 per row; {@code skip} is left out (an empty window is not allowed). */
+    private static List<List<InlineButton>> hourGrid(java.util.function.IntFunction<String> callback, int skip) {
+        List<List<InlineButton>> rows = new ArrayList<>();
+        List<InlineButton> row = new ArrayList<>();
+        for (int h = 0; h < 24; h++) {
+            if (h != skip) {
+                row.add(new InlineButton(String.format("%02d", h), callback.apply(h)));
+            }
+            if (row.size() == 6) {
+                rows.add(row);
+                row = new ArrayList<>();
+            }
+        }
+        if (!row.isEmpty()) {
+            rows.add(row);
+        }
+        return rows;
     }
 
     private static InlineButton toggle(String label, boolean on, String data) {

@@ -105,6 +105,8 @@ button, select, input { font: inherit; color: inherit; }
 
 /* settings */
 .setting { display: flex; justify-content: space-between; align-items: center; gap: 16px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; cursor: pointer; }
+.setting.hours { justify-content: flex-start; flex-wrap: wrap; cursor: default; }
+.setting.hours label { display: flex; align-items: center; gap: 8px; }
 .setting select { border: 1px solid var(--line); background: var(--bg); border-radius: 8px; padding: 6px 10px; }
 .switch { appearance: none; width: 44px; height: 26px; border-radius: 999px; background: var(--line); position: relative; cursor: pointer; flex: none; transition: background 0.15s; margin: 0; }
 .switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: transform 0.15s; }

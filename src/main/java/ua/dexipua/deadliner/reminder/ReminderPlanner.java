@@ -32,6 +32,12 @@ public class ReminderPlanner {
      */
     public List<DueReminder> plan(List<Deadline> open, Set<Integer> offsets, Set<SentKey> alreadySent, Instant now,
                                   boolean quietHours) {
+        return plan(open, offsets, alreadySent, now, quietHours, QuietHours.DEFAULT);
+    }
+
+    /** {@code window} is the student's quiet hours; it also matters when they are switched off (see below). */
+    public List<DueReminder> plan(List<Deadline> open, Set<Integer> offsets, Set<SentKey> alreadySent, Instant now,
+                                  boolean quietHours, QuietHours window) {
         Instant windowStart = now.minus(GRACE);
         List<DueReminder> due = new ArrayList<>();
         for (Deadline d : open) {
@@ -40,8 +46,8 @@ public class ReminderPlanner {
             }
             for (int offset : offsets) {
                 Instant onTime = d.getDueAt().minus(Duration.ofMinutes(offset));
-                Instant morning = QuietHours.isQuiet(onTime) && QuietHours.end(onTime).isBefore(d.getDueAt())
-                        ? QuietHours.end(onTime) : onTime;
+                Instant morning = window.isQuiet(onTime) && window.end(onTime).isBefore(d.getDueAt())
+                        ? window.end(onTime) : onTime;
                 // with quiet hours off, a reminder held overnight while they were on still goes out at 08:00
                 boolean inWindow = inWindow(morning, windowStart, now) || (!quietHours && inWindow(onTime, windowStart, now));
                 if (inWindow && !alreadySent.contains(new SentKey(d.getId(), offset, d.getDueAt()))) {

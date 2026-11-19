@@ -37,6 +37,8 @@ export interface CourseGroup {
 
 export interface Me {
   quietHours: boolean;
+  quietStart: number; // Kyiv hour 0-23
+  quietEnd: number;
   digestEnabled: boolean;
   offsets: number[];
   groups: CourseGroup[];
@@ -67,7 +69,7 @@ export const api = {
   done: (id: number) => call<Deadline>("POST", `/api/deadlines/${id}/done`),
   undo: (id: number) => call<Deadline>("POST", `/api/deadlines/${id}/undo`),
   stats: () => call<Stats>("GET", "/api/stats"),
-  saveSettings: (s: { offsets: number[]; digestEnabled: boolean; quietHours: boolean }) =>
+  saveSettings: (s: { offsets: number[]; digestEnabled: boolean; quietHours: boolean; quietStart: number; quietEnd: number }) =>
     call<Me>("PUT", "/api/settings", s),
   setGroup: (key: string, group: number | null) => call<Me>("PUT", `/api/groups/${key}`, { group }),
   logout: () => call<void>("POST", "/api/logout"),

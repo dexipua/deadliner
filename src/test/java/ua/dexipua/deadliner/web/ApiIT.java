@@ -154,6 +154,25 @@ class ApiIT {
     }
 
     @Test
+    void quietHoursTimeIsSaved() throws Exception {
+        mvc.perform(change(put("/api/settings")).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"offsets\":[1440],\"digestEnabled\":true,\"quietHours\":true,\"quietStart\":1,\"quietEnd\":9}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.quietStart").value(1))
+                .andExpect(jsonPath("$.quietEnd").value(9));
+    }
+
+    @Test
+    void badQuietHoursAreRejected() throws Exception {
+        for (String hours : new String[] {"\"quietStart\":8,\"quietEnd\":8", "\"quietStart\":24,\"quietEnd\":8"}) {
+            mvc.perform(change(put("/api/settings")).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"offsets\":[1440],\"digestEnabled\":true,\"quietHours\":true," + hours + "}"))
+                    .andExpect(status().isBadRequest());
+        }
+        assertThat(users.findById(me).orElseThrow().getQuietStart()).isEqualTo(23);
+    }
+
+    @Test
     void nullOffsetIsRejected() throws Exception {
         mvc.perform(change(put("/api/settings")).contentType(MediaType.APPLICATION_JSON)
                         .content("{\"offsets\":[null],\"digestEnabled\":true,\"quietHours\":true}"))

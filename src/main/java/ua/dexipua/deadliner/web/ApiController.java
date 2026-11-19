@@ -19,6 +19,7 @@ import ua.dexipua.deadliner.deadline.DeadlineStatus;
 import ua.dexipua.deadliner.deadline.GroupFilter;
 import ua.dexipua.deadliner.deadline.Stats;
 import ua.dexipua.deadliner.reminder.MessageFormatter;
+import ua.dexipua.deadliner.reminder.QuietHours;
 import ua.dexipua.deadliner.reminder.ReminderSettings;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
@@ -44,7 +45,8 @@ public class ApiController {
     public record CourseGroup(String key, String course, Integer group) {
     }
 
-    public record Me(boolean quietHours, boolean digestEnabled, List<Integer> offsets, List<CourseGroup> groups) {
+    public record Me(boolean quietHours, int quietStart, int quietEnd, boolean digestEnabled, List<Integer> offsets,
+                     List<CourseGroup> groups) {
     }
 
     public record DeadlineView(long id, String course, String title, Instant dueAt, String status) {
@@ -62,7 +64,9 @@ public class ApiController {
     public record StatsView(Counts total, List<CourseStats> courses, boolean groupHint) {
     }
 
-    public record SettingsRequest(List<Integer> offsets, boolean digestEnabled, boolean quietHours) {
+    /** quietStart/quietEnd are optional: leave them out to keep the current window. */
+    public record SettingsRequest(List<Integer> offsets, boolean digestEnabled, boolean quietHours,
+                                  Integer quietStart, Integer quietEnd) {
     }
 
     public record GroupRequest(Integer group) {
@@ -92,7 +96,8 @@ public class ApiController {
         List<CourseGroup> courses = GroupFilter.coursesWithGroups(deadlines.findByUserId(userId)).stream()
                 .map(c -> new CourseGroup(GroupFilter.courseKey(c), MessageFormatter.shortCourse(c), groups.get(c)))
                 .toList();
-        return new Me(user.isQuietHours(), user.isDigestEnabled(), List.copyOf(settings.offsets(userId)), courses);
+        return new Me(user.isQuietHours(), user.getQuietStart(), user.getQuietEnd(), user.isDigestEnabled(),
+                List.copyOf(settings.offsets(userId)), courses);
     }
 
     /** Recent overdue (open) and the next two weeks (open or done, so a mistaken ✅ can be undone). */
@@ -147,8 +152,19 @@ public class ApiController {
         if (!ReminderSettings.DEFAULT_OFFSETS.containsAll(offsets)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown reminder offset");
         }
+        QuietHours window = null;
+        if (request.quietStart() != null || request.quietEnd() != null) {
+            try {
+                window = new QuietHours(request.quietStart(), request.quietEnd());
+            } catch (IllegalArgumentException | NullPointerException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "quiet hours must be two different hours 0-23");
+            }
+        }
         // the row lock makes two fast saves run one after another instead of colliding
         AppUser user = users.lockById(userId).orElseThrow(ApiController::notFound);
+        if (window != null) {
+            user.setQuietWindow(window);
+        }
         settings.replace(userId, offsets);
         user.setDigestEnabled(request.digestEnabled());
         user.setQuietHours(request.quietHours());

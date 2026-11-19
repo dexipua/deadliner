@@ -103,6 +103,16 @@ class ReminderPlannerTest {
     }
 
     @Test
+    void customQuietHoursHoldTheReminderUntilTheirEnd() {
+        Deadline d = deadline(1, Instant.parse("2026-11-20T21:00:00Z")); // 23:00 Kyiv; 1-day reminder at 23:00 Kyiv on 19th
+        QuietHours earlyBird = new QuietHours(21, 6);
+
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-19T21:00:30Z"), true, earlyBird)).isEmpty();
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-20T04:00:30Z"), true, earlyBird))
+                .containsExactly(new DueReminder(d, 1440)); // 06:00 Kyiv
+    }
+
+    @Test
     void withoutQuietHoursNightReminderGoesOutOnTime() {
         Deadline d = deadline(1, DUE_AT_2AM_KYIV);
 

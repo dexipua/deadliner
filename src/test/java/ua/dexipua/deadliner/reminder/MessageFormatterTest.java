@@ -36,6 +36,36 @@ class MessageFormatterTest {
     }
 
     @Test
+    void summerTimeIsUtcPlusThree() {
+        String text = formatter.reminder(List.of(deadline(null, "Exam", "2027-03-28T20:59:00Z")));
+
+        assertThat(text).contains("Нд 28.03, 23:59 — Exam");
+    }
+
+    @Test
+    void winterTimeIsUtcPlusTwo() {
+        String text = formatter.reminder(List.of(deadline(null, "Exam", "2026-12-01T21:59:00Z")));
+
+        assertThat(text).contains("Вт 01.12, 23:59 — Exam");
+    }
+
+    @Test
+    void emptyDigestGivesNoMessage() {
+        assertThat(formatter.digest(List.of())).isEmpty();
+    }
+
+    @Test
+    void digestListsTheWeek() {
+        assertThat(formatter.digest(List.of(deadline("CS201 (2026-2027)", "A3", "2026-11-20T21:59:00Z"))))
+                .get().asString().contains("тиждень").contains("CS201: A3");
+    }
+
+    @Test
+    void emptyListSaysNothingIsDue() {
+        assertThat(formatter.list(List.of())).contains("немає");
+    }
+
+    @Test
     void reminderListsDeadlinesInDueOrder() {
         String text = formatter.reminder(List.of(
                 deadline("B", "later", "2026-11-22T10:00:00Z"),

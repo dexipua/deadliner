@@ -8,6 +8,7 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 
 /** Bot texts about deadlines. All times are shown in Kyiv time. */
@@ -25,7 +26,23 @@ public class MessageFormatter {
         return "⏰ Нагадування про дедлайни:\n\n" + lines(deadlines);
     }
 
-    String lines(List<Deadline> deadlines) {
+    /** Sunday digest; empty when nothing is due, so the user is not messaged for nothing. */
+    public Optional<String> digest(List<Deadline> nextWeek) {
+        if (nextWeek.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of("🗓 Дедлайни на наступний тиждень:\n\n" + lines(nextWeek));
+    }
+
+    /** Answer to /deadlines. */
+    public String list(List<Deadline> deadlines) {
+        if (deadlines.isEmpty()) {
+            return "🎉 На найближчі 7 днів дедлайнів немає.";
+        }
+        return "📋 Дедлайни на 7 днів:\n\n" + lines(deadlines);
+    }
+
+    private String lines(List<Deadline> deadlines) {
         StringBuilder text = new StringBuilder();
         deadlines.stream()
                 .sorted(Comparator.comparing(Deadline::getDueAt))

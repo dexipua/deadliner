@@ -16,4 +16,12 @@ public interface DeadlineRepository extends JpaRepository<Deadline, Long> {
               and d.status = ua.dexipua.deadliner.deadline.DeadlineStatus.OPEN and d.dueAt > :now
             order by d.userId, d.dueAt""")
     List<Deadline> findUpcomingOpenOfActiveUsers(Instant now);
+
+    @Query("""
+            select d from Deadline d
+            where d.userId = :userId
+              and d.status = ua.dexipua.deadliner.deadline.DeadlineStatus.OPEN
+              and d.dueAt > :from and d.dueAt <= :to
+            order by d.dueAt""")
+    List<Deadline> findOpenDueBetween(long userId, Instant from, Instant to);
 }

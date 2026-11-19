@@ -85,6 +85,11 @@ public class CommandHandler {
             settings.toggle(user.get().getId(), Integer.parseInt(data.substring("offset:".length())));
             return settingsReply(user.get());
         }
+        if (data.equals("quiet")) {
+            user.get().setQuietHours(!user.get().isQuietHours());
+            users.save(user.get());
+            return settingsReply(user.get());
+        }
         if (data.equals("digest")) {
             user.get().setDigestEnabled(!user.get().isDigestEnabled());
             users.save(user.get());
@@ -168,6 +173,7 @@ public class CommandHandler {
         buttons.add(toggle("За 1 день", on.contains(1440), "offset:1440"));
         buttons.add(toggle("За 3 години", on.contains(180), "offset:180"));
         buttons.add(toggle("План на тиждень (нд 19:00)", user.isDigestEnabled(), "digest"));
+        buttons.add(toggle("Тихі години 23:00–08:00", user.isQuietHours(), "quiet"));
         return BotReply.withButtons(Texts.SETTINGS, buttons);
     }
 

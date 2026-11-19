@@ -67,7 +67,7 @@ public class ReminderJob {
                         .filter(d -> GroupFilter.visible(d, user.getSeminarGroup()))
                         .toList();
                 var sent = sentReminders.findFor(open.stream().map(Deadline::getId).toList());
-                List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now);
+                List<DueReminder> due = planner.plan(open, settings.offsets(entry.getKey()), sent, now, user.isQuietHours());
                 if (!due.isEmpty()) {
                     send(entry.getKey(), due, now);
                 }

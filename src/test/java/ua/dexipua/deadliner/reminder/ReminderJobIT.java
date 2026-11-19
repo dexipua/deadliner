@@ -37,8 +37,11 @@ class ReminderJobIT {
         notifier.reset();
     }
 
+    // NOW is 23:59 Kyiv time; these tests are about sending, not about quiet hours
     private AppUser userWithTwoDeadlinesDueTomorrow(long telegramId) {
-        AppUser user = users.save(new AppUser(telegramId, NOW));
+        AppUser user = new AppUser(telegramId, NOW);
+        user.setQuietHours(false);
+        user = users.save(user);
         settings.createDefaultsIfMissing(user.getId());
         for (String title : new String[] {"Essay", "Quiz"}) {
             Deadline d = new Deadline(user.getId(), title + telegramId);
@@ -77,6 +80,7 @@ class ReminderJobIT {
     void otherGroupsQuizIsNotReminded() {
         AppUser user = users.save(new AppUser(700L, NOW));
         user.setSeminarGroup(5);
+        user.setQuietHours(false);
         users.save(user);
         settings.createDefaultsIfMissing(user.getId());
         for (String title : new String[] {"Квіз 8 · Група 5", "Квіз 8 · Група 7"}) {

@@ -23,6 +23,15 @@ public class ReminderPlanner {
     }
 
     public List<DueReminder> plan(List<Deadline> open, Set<Integer> offsets, Set<SentKey> alreadySent, Instant now) {
+        return plan(open, offsets, alreadySent, now, false);
+    }
+
+    /**
+     * With {@code quietHours}, a reminder that falls between 23:00 and 08:00 Kyiv time is moved to 08:00,
+     * unless the deadline itself comes before 08:00; then it goes out on time.
+     */
+    public List<DueReminder> plan(List<Deadline> open, Set<Integer> offsets, Set<SentKey> alreadySent, Instant now,
+                                  boolean quietHours) {
         Instant windowStart = now.minus(GRACE);
         List<DueReminder> due = new ArrayList<>();
         for (Deadline d : open) {
@@ -31,6 +40,9 @@ public class ReminderPlanner {
             }
             for (int offset : offsets) {
                 Instant sendAt = d.getDueAt().minus(Duration.ofMinutes(offset));
+                if (quietHours && QuietHours.isQuiet(sendAt) && QuietHours.end(sendAt).isBefore(d.getDueAt())) {
+                    sendAt = QuietHours.end(sendAt);
+                }
                 boolean inWindow = sendAt.isAfter(windowStart) && !sendAt.isAfter(now);
                 if (inWindow && !alreadySent.contains(new SentKey(d.getId(), offset, d.getDueAt()))) {
                     due.add(new DueReminder(d, offset));

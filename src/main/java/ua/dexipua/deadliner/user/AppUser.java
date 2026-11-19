@@ -33,6 +33,9 @@ public class AppUser {
     @Column(name = "seminar_group")
     private Integer seminarGroup;
 
+    @Column(name = "quiet_hours")
+    private boolean quietHours = true;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 
@@ -90,6 +93,14 @@ public class AppUser {
 
     public void setSeminarGroup(Integer seminarGroup) {
         this.seminarGroup = seminarGroup;
+    }
+
+    public boolean isQuietHours() {
+        return quietHours;
+    }
+
+    public void setQuietHours(boolean quietHours) {
+        this.quietHours = quietHours;
     }
 
     public Instant getCreatedAt() {

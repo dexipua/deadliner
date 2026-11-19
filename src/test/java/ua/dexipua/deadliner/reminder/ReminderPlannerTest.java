@@ -68,6 +68,40 @@ class ReminderPlannerTest {
         assertThat(plan(List.of(d), Set.of())).isEmpty();
     }
 
+    // Kyiv is UTC+2 in November: 00:00Z = 02:00 Kyiv, 06:00Z = 08:00 Kyiv
+    static final Instant DUE_AT_2AM_KYIV = Instant.parse("2026-11-21T00:00:00Z");
+
+    @Test
+    void nightReminderIsHeldDuringQuietHours() {
+        Deadline d = deadline(1, DUE_AT_2AM_KYIV);
+
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-20T00:00:30Z"), true)).isEmpty();
+    }
+
+    @Test
+    void heldReminderIsSentAtEightInTheMorning() {
+        Deadline d = deadline(1, DUE_AT_2AM_KYIV);
+
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-20T06:00:30Z"), true))
+                .containsExactly(new DueReminder(d, 1440));
+    }
+
+    @Test
+    void urgentReminderIsSentAtNightAnyway() {
+        Deadline d = deadline(1, Instant.parse("2026-11-20T01:00:00Z")); // 03:00 Kyiv, before quiet hours end
+
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-19T22:00:30Z"), true))
+                .containsExactly(new DueReminder(d, 180));
+    }
+
+    @Test
+    void withoutQuietHoursNightReminderGoesOutOnTime() {
+        Deadline d = deadline(1, DUE_AT_2AM_KYIV);
+
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-20T00:00:30Z"), false))
+                .containsExactly(new DueReminder(d, 1440));
+    }
+
     @Test
     void reminderMissedByMoreThanGraceIsSkipped() {
         Deadline d = deadline(1, NOW.plus(Duration.ofMinutes(1440)).minus(ReminderPlanner.GRACE).minusSeconds(1));

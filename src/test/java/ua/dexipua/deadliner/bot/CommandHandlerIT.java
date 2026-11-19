@@ -148,6 +148,15 @@ class CommandHandlerIT {
     }
 
     @Test
+    void quietHoursCanBeTurnedOff() {
+        handler.handle(ME, URL);
+
+        handler.handleCallback(ME, "quiet");
+
+        assertThat(users.findByTelegramId(ME).orElseThrow().isQuietHours()).isFalse();
+    }
+
+    @Test
     void statsShowsCountsPerCourse() {
         handler.handle(ME, URL);
         handler.handleCallback(ME, "done:" + deadline(ME, "1003@teaching.kse.org.ua").getId());

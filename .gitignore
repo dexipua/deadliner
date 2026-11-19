@@ -11,3 +11,5 @@ src/test/resources/fixtures/*.real.ics
 bin/
 backups/
 graphify-out/
+node_modules/
+src/main/resources/static/

@@ -30,6 +30,7 @@ import java.util.Set;
 public class CommandHandler {
 
     private static final Duration WEEK = Duration.ofDays(7);
+    private static final Duration OVERDUE_WINDOW = Duration.ofDays(14);
     private static final String HELP_LINK = "help:link";
     private static final String STOP_CONFIRMED = "stop:confirm";
     private static final String STOP_CANCELLED = "stop:cancel";
@@ -139,8 +140,11 @@ public class CommandHandler {
             return BotReply.of(Texts.NOT_CONNECTED);
         }
         Instant now = clock.instant();
-        List<Deadline> week = deadlines.findOpenDueBetween(user.get().getId(), now, now.plus(WEEK));
-        return BotReply.of(formatter.list(visible(user.get(), week), now));
+        long id = user.get().getId();
+        List<Deadline> upcoming = visible(user.get(), deadlines.findOpenDueBetween(id, now, now.plus(WEEK)));
+        // Moodle doesn't know about submissions, so recent past deadlines stay open until marked
+        List<Deadline> overdue = visible(user.get(), deadlines.findOpenDueBetween(id, now.minus(OVERDUE_WINDOW), now));
+        return BotReply.withButtons(formatter.list(overdue, upcoming, now), formatter.listButtons(overdue, upcoming));
     }
 
     private BotReply groupList(AppUser user) {

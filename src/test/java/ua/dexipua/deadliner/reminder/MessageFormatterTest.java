@@ -93,16 +93,47 @@ class MessageFormatterTest {
         Deadline today = deadline(1, "ENG121 (2026-2027)", "HW1", "2026-11-19T21:59:30Z");
         Deadline nextWeek = deadline(3, null, "Essay", "2026-11-23T21:59:00Z");
 
-        String text = formatter.list(List.of(nextWeek, assignment(), today), Instant.parse("2026-11-19T10:00:00Z"));
+        String text = formatter.list(List.of(), List.of(nextWeek, assignment(), today), Instant.parse("2026-11-19T10:00:00Z"));
 
         assertThat(text).contains("<b>Сьогодні</b>").contains("<b>Завтра</b>").contains("<b>Пн, 23 листопада</b>");
-        assertThat(text).contains("• <b>23:59</b> · CS201 — Assignment 3 - API &amp; Trading");
+        assertThat(text).contains("2. <b>23:59</b> · CS201 — Assignment 3 - API &amp; Trading");
         assertThat(text.indexOf("Сьогодні")).isLessThan(text.indexOf("Завтра"));
     }
 
     @Test
+    void overdueComeFirstAndNumberingContinues() {
+        Deadline overdue = deadline(9, "MATH101 (2026-2027)", "Mind Map 2", "2026-11-10T21:59:00Z");
+
+        String text = formatter.list(List.of(overdue), List.of(assignment()), NOW);
+
+        assertThat(text).contains("⚠️ <b>Прострочені</b>").contains("1. <b>вт, 10 листопада</b> · MATH101 — Mind Map 2")
+                .contains("2. <b>23:59</b> · CS201");
+        assertThat(text.indexOf("Прострочені")).isLessThan(text.indexOf("Завтра"));
+    }
+
+    @Test
+    void listButtonsMarkEachNumberedDeadlineDone() {
+        Deadline overdue = deadline(9, "MATH101 (2026-2027)", "Mind Map 2", "2026-11-10T21:59:00Z");
+
+        List<List<InlineButton>> rows = formatter.listButtons(List.of(overdue), List.of(assignment()));
+
+        assertThat(rows).containsExactly(List.of(new InlineButton("✅ 1", "done:9"), new InlineButton("✅ 2", "done:7")));
+    }
+
+    @Test
+    void listButtonsWrapAfterFivePerRow() {
+        List<Deadline> many = new java.util.ArrayList<>();
+        for (int i = 1; i <= 7; i++) {
+            many.add(deadline(i, null, "T" + i, "2026-11-2" + i + "T10:00:00Z"));
+        }
+
+        assertThat(formatter.listButtons(List.of(), many)).extracting(List::size).containsExactly(5, 2);
+    }
+
+    @Test
     void emptyListSaysNothingIsDue() {
-        assertThat(formatter.list(List.of(), NOW)).contains("немає");
+        assertThat(formatter.list(List.of(), List.of(), NOW)).contains("немає");
+        assertThat(formatter.listButtons(List.of(), List.of())).isEmpty();
     }
 
     @Test

@@ -67,15 +67,43 @@ public class MessageFormatter {
         if (nextWeek.isEmpty()) {
             return Optional.empty();
         }
-        return Optional.of("🗓 <b>План на тиждень</b>" + byDay(nextWeek, now));
+        return Optional.of("🗓 <b>План на тиждень</b>" + byDay(nextWeek, now, null));
     }
 
-    /** Answer to /deadlines. */
-    public String list(List<Deadline> deadlines, Instant now) {
-        if (deadlines.isEmpty()) {
+    /** Answer to /deadlines: overdue first, then the week by day, numbered to match {@link #listButtons}. */
+    public String list(List<Deadline> overdue, List<Deadline> upcoming, Instant now) {
+        if (overdue.isEmpty() && upcoming.isEmpty()) {
             return "🎉 На найближчі 7 днів дедлайнів немає. Відпочивай!";
         }
-        return "📋 <b>Дедлайни на 7 днів</b>" + byDay(deadlines, now);
+        StringBuilder text = new StringBuilder("📋 <b>Дедлайни на 7 днів</b>");
+        List<Deadline> late = sorted(overdue);
+        if (!late.isEmpty()) {
+            text.append("\n\n⚠️ <b>Прострочені</b>");
+            for (int i = 0; i < late.size(); i++) {
+                Deadline d = late.get(i);
+                text.append('\n').append(i + 1).append(". <b>").append(date(d.getDueAt())).append("</b> · ").append(item(d));
+            }
+        }
+        text.append(byDay(upcoming, now, late.size()));
+        if (!late.isEmpty() || !upcoming.isEmpty()) {
+            text.append("\n\n<i>Здав? Натисни номер нижче.</i>");
+        }
+        return text.toString();
+    }
+
+    /** "✅ n" for every deadline in {@link #list}, five per row. */
+    public List<List<InlineButton>> listButtons(List<Deadline> overdue, List<Deadline> upcoming) {
+        List<Deadline> all = new ArrayList<>(sorted(overdue));
+        all.addAll(sorted(upcoming));
+        List<List<InlineButton>> rows = new ArrayList<>();
+        for (int i = 0; i < all.size(); i += 5) {
+            List<InlineButton> row = new ArrayList<>();
+            for (int j = i; j < Math.min(i + 5, all.size()); j++) {
+                row.add(new InlineButton("✅ " + (j + 1), "done:" + all.get(j).getId()));
+            }
+            rows.add(row);
+        }
+        return rows;
     }
 
     /** One line for the "connected" message. */
@@ -151,23 +179,27 @@ public class MessageFormatter {
                 .toString();
     }
 
-    private String byDay(List<Deadline> deadlines, Instant now) {
+    /** Groups by Kyiv day. Lines are numbered from {@code numberFrom + 1}, or bulleted when it is null. */
+    private String byDay(List<Deadline> deadlines, Instant now, Integer numberFrom) {
+        boolean numbered = numberFrom != null;
         LocalDate today = now.atZone(KYIV).toLocalDate();
         Map<LocalDate, List<Deadline>> days = sorted(deadlines).stream()
                 .collect(Collectors.groupingBy(d -> d.getDueAt().atZone(KYIV).toLocalDate(),
                         LinkedHashMap::new, Collectors.toList()));
         StringBuilder text = new StringBuilder();
+        int[] n = {numbered ? numberFrom : 0};
         days.forEach((day, list) -> {
             text.append("\n\n<b>").append(dayName(day, today)).append("</b>");
             for (Deadline d : list) {
-                text.append("\n• <b>").append(time(d.getDueAt())).append("</b> · ");
-                if (d.getCourseName() != null) {
-                    text.append(escape(shortCourse(d.getCourseName()))).append(" — ");
-                }
-                text.append(escape(d.getTitle()));
+                text.append('\n').append(numbered ? ++n[0] + "." : "•").append(" <b>").append(time(d.getDueAt()))
+                        .append("</b> · ").append(item(d));
             }
         });
         return text.toString();
+    }
+
+    private static String item(Deadline d) {
+        return (d.getCourseName() == null ? "" : escape(shortCourse(d.getCourseName())) + " — ") + escape(d.getTitle());
     }
 
     private static String dayName(LocalDate day, LocalDate today) {

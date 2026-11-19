@@ -247,6 +247,28 @@ class CommandHandlerIT {
     }
 
     @Test
+    void deadlinesListHasDoneButtonsIncludingRecentOverdue() {
+        handler.handle(ME, URL);
+        long overdue = deadline(ME, "1007@teaching.kse.org.ua").getId(); // due 10 Nov, NOW is 19 Nov
+        long quiz = deadline(ME, "1002@teaching.kse.org.ua").getId();
+
+        BotReply reply = handler.handle(ME, "/deadlines");
+
+        assertThat(reply.text()).contains("Прострочені").contains("Mind Map 2");
+        assertThat(callbacks(reply)).containsExactly("done:" + overdue, "done:" + quiz);
+    }
+
+    @Test
+    void doneFromListDisappearsFromNextList() {
+        handler.handle(ME, URL);
+        long overdue = deadline(ME, "1007@teaching.kse.org.ua").getId();
+
+        handler.handleCallback(ME, "done:" + overdue);
+
+        assertThat(handler.handle(ME, "/deadlines").text()).doesNotContain("Mind Map 2");
+    }
+
+    @Test
     void doneButtonMarksOwnDeadline() {
         handler.handle(ME, URL);
         long id = deadline(ME, "1003@teaching.kse.org.ua").getId();

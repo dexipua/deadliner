@@ -43,6 +43,8 @@ final class Texts {
             "👥 <b>Групи по курсах</b>\n\nОбери курс і вкажи свою групу — квізи інших груп я ховатиму.";
     static final String GROUP_COURSE = "👥 <b>%s</b>\n\nЯка твоя група в цьому курсі?";
     static final String GROUP_NONE = "👍 У твоїх курсах немає квізів по групах — нічого налаштовувати не треба.";
+    static final String STATS_GROUP_HINT =
+            "\n\n👥 Квізи чужих груп зараз рахуються як прострочені. Обери свої групи — /group";
     static final String GROUP_STALE = "Список курсів змінився — відкрий /group ще раз";
 
     static final String SETTINGS = "⚙️ <b>Налаштування</b>\n\nНатисни, щоб увімкнути або вимкнути:";
@@ -55,6 +57,7 @@ final class Texts {
 
     // toasts: short plain text, shown as a pop-up
     static final String SNOOZED = "⏰ Нагадаю ще раз о %s";
+    static final String SNOOZE_TOO_LATE = "Дедлайн уже зовсім скоро — нагадувати пізно";
     static final String DONE = "✅ Здано: %s";
     static final String UNDONE = "↩️ Повернув у список: %s";
     static final String DEADLINE_NOT_FOUND = "Не знайшов цей дедлайн — можливо, його вже прибрали";

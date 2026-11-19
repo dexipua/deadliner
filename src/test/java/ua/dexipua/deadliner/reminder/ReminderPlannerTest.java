@@ -95,6 +95,14 @@ class ReminderPlannerTest {
     }
 
     @Test
+    void reminderHeldOvernightIsStillSentIfQuietHoursWereTurnedOff() {
+        Deadline d = deadline(1, Instant.parse("2026-11-20T08:00:00Z")); // 10:00 Kyiv; 3 h reminder at 07:00, held to 08:00
+
+        assertThat(planner.plan(List.of(d), DEFAULT, Set.of(), Instant.parse("2026-11-20T06:00:30Z"), false))
+                .containsExactly(new DueReminder(d, 180));
+    }
+
+    @Test
     void withoutQuietHoursNightReminderGoesOutOnTime() {
         Deadline d = deadline(1, DUE_AT_2AM_KYIV);
 

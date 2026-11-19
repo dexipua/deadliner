@@ -31,6 +31,8 @@ public class CommandHandler {
 
     private static final Duration WEEK = Duration.ofDays(7);
     private static final Duration OVERDUE_WINDOW = Duration.ofDays(14);
+    private static final Duration SNOOZE = Duration.ofHours(1);
+    private static final Duration SNOOZE_BEFORE_DUE = Duration.ofMinutes(10);
     private static final String HELP_LINK = "help:link";
     private static final String STOP_CONFIRMED = "stop:confirm";
     private static final String STOP_CANCELLED = "stop:cancel";
@@ -66,10 +68,7 @@ public class CommandHandler {
                     List.of(List.of(new InlineButton(Texts.HELP_BUTTON, HELP_LINK))));
             case "/help" -> BotReply.of(Texts.HOW_TO_CONNECT);
             case "/deadlines" -> deadlinesCommand(telegramId);
-            case "/stats" -> user(telegramId)
-                    .map(u -> BotReply.of(formatter.stats(Stats.of(visible(u, deadlines.findByUserId(u.getId())),
-                            clock.instant()))))
-                    .orElse(BotReply.of(Texts.NOT_CONNECTED));
+            case "/stats" -> user(telegramId).map(this::statsCommand).orElse(BotReply.of(Texts.NOT_CONNECTED));
             case "/settings" -> user(telegramId)
                     .map(u -> BotReply.withButtons(Texts.SETTINGS, settingsButtons(u)))
                     .orElse(BotReply.of(Texts.NOT_CONNECTED));
@@ -137,6 +136,15 @@ public class CommandHandler {
         return BotReply.deletingUserMessage(text);
     }
 
+    private BotReply statsCommand(AppUser user) {
+        List<Deadline> all = deadlines.findByUserId(user.getId());
+        String text = formatter.stats(Stats.of(visible(user, all), clock.instant()));
+        // before /group, other groups' quizzes count as overdue and spoil the numbers
+        Map<String, Integer> groups = courseGroups.of(user.getId());
+        boolean groupMissing = GroupFilter.coursesWithGroups(all).stream().anyMatch(c -> !groups.containsKey(c));
+        return BotReply.of(groupMissing ? text + Texts.STATS_GROUP_HINT : text);
+    }
+
     private BotReply deadlinesCommand(long telegramId) {
         Optional<AppUser> user = user(telegramId);
         if (user.isEmpty()) {
@@ -158,27 +166,29 @@ public class CommandHandler {
         return BotReply.withButtons(Texts.GROUP_PICK, courseButtons(user, courses));
     }
 
-    /** grp:list | grp:c:{course} | grp:s:{course}:{group} | grp:r:{course}; course = index in the sorted list. */
+    /**
+     * grp:list | grp:c:{key} | grp:s:{key}:{group} | grp:r:{key}. The key is a short hash of the course name,
+     * so an old button can never point at a different course after a sync adds one.
+     */
     private BotReply groupCallback(AppUser user, String data) {
         List<String> courses = GroupFilter.coursesWithGroups(deadlines.findByUserId(user.getId()));
         String[] parts = data.split(":");
+        if (parts.length < 2) {
+            return BotReply.toast(Texts.UNKNOWN_BUTTON, null);
+        }
         if (parts[1].equals("list")) {
             return BotReply.edit(Texts.GROUP_PICK, courseButtons(user, courses));
         }
-        int index;
-        try {
-            index = Integer.parseInt(parts[2]);
-        } catch (RuntimeException e) {
-            return BotReply.toast(Texts.UNKNOWN_BUTTON, null);
-        }
-        if (index < 0 || index >= courses.size()) {
+        Optional<String> found = parts.length < 3 ? Optional.empty()
+                : courses.stream().filter(c -> courseKey(c).equals(parts[2])).findFirst();
+        if (found.isEmpty()) {
             return BotReply.toast(Texts.GROUP_STALE, null);
         }
-        String course = courses.get(index);
+        String course = found.get();
         switch (parts[1]) {
             case "c" -> {
                 return BotReply.edit(Texts.GROUP_COURSE.formatted(Html.escape(MessageFormatter.shortCourse(course))),
-                        groupNumberButtons(index, courseGroups.of(user.getId()).get(course)));
+                        groupNumberButtons(course, courseGroups.of(user.getId()).get(course)));
             }
             case "s" -> {
                 if (parts.length < 4 || !parts[3].matches("\\d{1,2}")) {
@@ -194,28 +204,34 @@ public class CommandHandler {
         return BotReply.edit(Texts.GROUP_PICK, courseButtons(user, courses));
     }
 
+    /** 8 hex chars; course names are too long for Telegram's 64-byte callback data. */
+    static String courseKey(String course) {
+        return String.format("%08x", course.hashCode());
+    }
+
     private List<List<InlineButton>> courseButtons(AppUser user, List<String> courses) {
         Map<String, Integer> groups = courseGroups.of(user.getId());
         List<List<InlineButton>> rows = new ArrayList<>();
-        for (int i = 0; i < courses.size(); i++) {
-            Integer group = groups.get(courses.get(i));
-            String label = "📘 " + MessageFormatter.shortCourse(courses.get(i)) + " · "
+        for (String course : courses) {
+            Integer group = groups.get(course);
+            String label = "📘 " + MessageFormatter.shortCourse(course) + " · "
                     + (group == null ? "усі групи" : "група " + group);
-            rows.add(List.of(new InlineButton(label, "grp:c:" + i)));
+            rows.add(List.of(new InlineButton(label, "grp:c:" + courseKey(course))));
         }
         return rows;
     }
 
-    private static List<List<InlineButton>> groupNumberButtons(int course, Integer current) {
+    private static List<List<InlineButton>> groupNumberButtons(String course, Integer current) {
+        String key = courseKey(course);
         List<List<InlineButton>> rows = new ArrayList<>();
         for (int start = 1; start <= 10; start += 5) {
             List<InlineButton> row = new ArrayList<>();
             for (int n = start; n < start + 5; n++) {
-                row.add(new InlineButton((Integer.valueOf(n).equals(current) ? "✅ " : "") + n, "grp:s:" + course + ":" + n));
+                row.add(new InlineButton((Integer.valueOf(n).equals(current) ? "✅ " : "") + n, "grp:s:" + key + ":" + n));
             }
             rows.add(row);
         }
-        rows.add(List.of(new InlineButton("Усі групи", "grp:r:" + course), new InlineButton("← Назад", "grp:list")));
+        rows.add(List.of(new InlineButton("Усі групи", "grp:r:" + key), new InlineButton("← Назад", "grp:list")));
         return rows;
     }
 
@@ -224,27 +240,37 @@ public class CommandHandler {
         if (deadline.isEmpty() || deadline.get().getStatus() != DeadlineStatus.OPEN) {
             return BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
         }
-        Instant remindAt = clock.instant().plus(Duration.ofHours(1));
+        Instant now = clock.instant();
+        Instant remindAt = now.plus(SNOOZE);
+        Instant latest = deadline.get().getDueAt().minus(SNOOZE_BEFORE_DUE);
+        if (remindAt.isAfter(latest)) {
+            // reminders stop at the deadline, so "in an hour" would never come
+            if (!latest.isAfter(now)) {
+                return BotReply.toast(Texts.SNOOZE_TOO_LATE, null);
+            }
+            remindAt = latest;
+        }
         snoozes.snooze(deadline.get().getId(), remindAt);
         return BotReply.toast(Texts.SNOOZED.formatted(formatter.time(remindAt)), null);
     }
 
     private BotReply markDone(AppUser user, String rawId) {
         Optional<Deadline> deadline = ownDeadline(user, rawId);
-        if (deadline.isEmpty()) {
+        if (deadline.isEmpty() || deadline.get().getStatus() == DeadlineStatus.GONE) {
             return BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
         }
         Deadline d = deadline.get();
-        if (d.getStatus() != DeadlineStatus.DONE) {
+        if (d.getStatus() == DeadlineStatus.OPEN) {
             d.markDone(clock.instant());
             deadlines.save(d);
+            snoozes.delete(List.of(d.getId()));
         }
-        return BotReply.toast(Texts.DONE.formatted(formatter.label(d)), d.getId());
+        return BotReply.toast(Texts.DONE.formatted(formatter.toastLabel(d)), d.getId());
     }
 
     private BotReply undoDone(AppUser user, String rawId) {
         Optional<Deadline> deadline = ownDeadline(user, rawId);
-        if (deadline.isEmpty()) {
+        if (deadline.isEmpty() || deadline.get().getStatus() == DeadlineStatus.GONE) {
             return BotReply.toast(Texts.DEADLINE_NOT_FOUND, null);
         }
         Deadline d = deadline.get();
@@ -252,7 +278,7 @@ public class CommandHandler {
             d.reopen();
             deadlines.save(d);
         }
-        return BotReply.toast(Texts.UNDONE.formatted(formatter.label(d)), d.getId());
+        return BotReply.toast(Texts.UNDONE.formatted(formatter.toastLabel(d)), d.getId());
     }
 
     // only the owner may act on a deadline, whatever id the callback carries

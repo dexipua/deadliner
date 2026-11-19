@@ -47,6 +47,11 @@ class GroupFilterTest {
     }
 
     @Test
+    void hugeNumberInTitleDoesNotCrash() {
+        assertThat(GroupFilter.visible(d(MATH, "Квіз · Група 99999999999"), Map.of(MATH, 1))).isTrue();
+    }
+
+    @Test
     void englishGroupWorksToo() {
         assertThat(GroupFilter.visible(d(MATH, "Quiz 3 · Group 2"), Map.of(MATH, 5))).isFalse();
     }

@@ -131,6 +131,49 @@ class MessageFormatterTest {
     }
 
     @Test
+    void toastLabelIsShortEnoughForTelegram() {
+        Deadline d = deadline(1, "CS201 (2026-2027)", "x".repeat(300), "2026-11-20T21:59:00Z");
+
+        String label = formatter.toastLabel(d);
+
+        assertThat(label).hasSizeLessThanOrEqualTo(150).endsWith("…");
+    }
+
+    private static List<Deadline> many(int count, String firstDue) {
+        List<Deadline> list = new java.util.ArrayList<>();
+        Instant due = Instant.parse(firstDue);
+        for (int i = 0; i < count; i++) {
+            list.add(deadline(100 + i, "MATH101 (2026-2027)", "Квіз " + i + " · Заняття 17 · Група " + (i % 10 + 1), due.plusSeconds(i * 600L).toString()));
+        }
+        return list;
+    }
+
+    @Test
+    void longListIsCappedAndFitsInOneMessage() {
+        List<Deadline> upcoming = many(50, "2026-11-20T08:00:00Z");
+
+        String text = formatter.list(List.of(), upcoming, NOW);
+        int buttons = formatter.listButtons(List.of(), upcoming).stream().mapToInt(List::size).sum();
+
+        assertThat(text.length()).isLessThan(4096);
+        assertThat(text).contains("і ще 20").contains("/group");
+        assertThat(buttons).isEqualTo(30);
+    }
+
+    @Test
+    void overdueAreCappedAtTenAndNumberingStillMatchesButtons() {
+        List<Deadline> overdue = many(15, "2026-11-10T08:00:00Z");
+        List<Deadline> upcoming = List.of(assignment());
+
+        String text = formatter.list(overdue, upcoming, NOW);
+        List<List<InlineButton>> rows = formatter.listButtons(overdue, upcoming);
+
+        assertThat(text).contains("10. ").contains("11. <b>23:59</b> · CS201").doesNotContain("12. ");
+        assertThat(rows.stream().flatMap(List::stream).toList()).hasSize(11)
+                .last().extracting(InlineButton::callbackData).isEqualTo("done:7");
+    }
+
+    @Test
     void emptyListSaysNothingIsDue() {
         assertThat(formatter.list(List.of(), List.of(), NOW)).contains("немає");
         assertThat(formatter.listButtons(List.of(), List.of())).isEmpty();

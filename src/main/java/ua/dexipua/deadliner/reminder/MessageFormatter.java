@@ -70,13 +70,38 @@ public class MessageFormatter {
         return Optional.of("🗓 <b>План на тиждень</b>" + byDay(nextWeek, now, null));
     }
 
+    // Telegram caps a message at 4096 chars: show at most 30 items, at most 10 of them overdue
+    private static final int MAX_LIST = 30;
+    private static final int MAX_OVERDUE = 10;
+    private static final int MAX_TITLE = 80;
+    private static final int MAX_TOAST_LABEL = 150;
+
+    private record Shown(List<Deadline> overdue, List<Deadline> upcoming, int hidden) {
+    }
+
+    /** The same trimmed lists feed both {@link #list} and {@link #listButtons}, so numbers always match. */
+    private static Shown shown(List<Deadline> overdue, List<Deadline> upcoming) {
+        List<Deadline> late = sorted(overdue);
+        late = late.subList(Math.max(0, late.size() - MAX_OVERDUE), late.size()); // the most recent ones
+        List<Deadline> next = sorted(upcoming);
+        next = next.subList(0, Math.min(next.size(), MAX_LIST - late.size()));
+        return new Shown(late, next, overdue.size() + upcoming.size() - late.size() - next.size());
+    }
+
+    /** Plain text for a pop-up (Telegram allows 200 chars there). */
+    public String toastLabel(Deadline d) {
+        return cut(label(d), MAX_TOAST_LABEL);
+    }
+
     /** Answer to /deadlines: overdue first, then the week by day, numbered to match {@link #listButtons}. */
     public String list(List<Deadline> overdue, List<Deadline> upcoming, Instant now) {
         if (overdue.isEmpty() && upcoming.isEmpty()) {
             return "🎉 На найближчі 7 днів дедлайнів немає. Відпочивай!";
         }
+        Shown shown = shown(overdue, upcoming);
+        upcoming = shown.upcoming();
         StringBuilder text = new StringBuilder("📋 <b>Дедлайни на 7 днів</b>");
-        List<Deadline> late = sorted(overdue);
+        List<Deadline> late = shown.overdue();
         if (!late.isEmpty()) {
             text.append("\n\n⚠️ <b>Прострочені</b>");
             for (int i = 0; i < late.size(); i++) {
@@ -85,16 +110,19 @@ public class MessageFormatter {
             }
         }
         text.append(byDay(upcoming, now, late.size()));
-        if (!late.isEmpty() || !upcoming.isEmpty()) {
-            text.append("\n\n<i>Здав? Натисни номер нижче.</i>");
+        if (shown.hidden() > 0) {
+            text.append("\n\n…і ще ").append(shown.hidden())
+                    .append(". Сховай квізи чужих груп через /group, щоб список став коротшим.");
         }
+        text.append("\n\n<i>Здав? Натисни номер нижче.</i>");
         return text.toString();
     }
 
     /** "✅ n" for every deadline in {@link #list}, five per row. */
     public List<List<InlineButton>> listButtons(List<Deadline> overdue, List<Deadline> upcoming) {
-        List<Deadline> all = new ArrayList<>(sorted(overdue));
-        all.addAll(sorted(upcoming));
+        Shown shown = shown(overdue, upcoming);
+        List<Deadline> all = new ArrayList<>(shown.overdue());
+        all.addAll(shown.upcoming());
         List<List<InlineButton>> rows = new ArrayList<>();
         for (int i = 0; i < all.size(); i += 5) {
             List<InlineButton> row = new ArrayList<>();
@@ -199,7 +227,12 @@ public class MessageFormatter {
     }
 
     private static String item(Deadline d) {
-        return (d.getCourseName() == null ? "" : escape(shortCourse(d.getCourseName())) + " — ") + escape(d.getTitle());
+        return (d.getCourseName() == null ? "" : escape(shortCourse(d.getCourseName())) + " — ")
+                + escape(cut(d.getTitle(), MAX_TITLE));
+    }
+
+    private static String cut(String s, int max) {
+        return s.length() <= max ? s : s.substring(0, max - 1) + "…";
     }
 
     private static String dayName(LocalDate day, LocalDate today) {

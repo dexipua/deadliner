@@ -13,7 +13,7 @@ import java.util.regex.Pattern;
  */
 public final class GroupFilter {
 
-    private static final Pattern GROUP = Pattern.compile("(?:Група|Group)\\s*(\\d+)", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
+    private static final Pattern GROUP = Pattern.compile("(?:Група|Group)\\s*(\\d{1,3})(?!\\d)", Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE);
 
     private GroupFilter() {
     }

@@ -15,6 +15,7 @@ import org.telegram.telegrambots.meta.api.objects.replykeyboard.InlineKeyboardMa
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardButton;
 import org.telegram.telegrambots.meta.api.objects.replykeyboard.buttons.InlineKeyboardRow;
 import org.telegram.telegrambots.meta.exceptions.TelegramApiException;
+import org.telegram.telegrambots.meta.exceptions.TelegramApiRequestException;
 import org.telegram.telegrambots.meta.generics.TelegramClient;
 
 import java.util.List;
@@ -44,6 +45,13 @@ public class DeadlinerBot implements LongPollingUpdateConsumer {
                 onMessage(update.getMessage());
             } else if (update.hasCallbackQuery()) {
                 onCallback(update.getCallbackQuery());
+            }
+        } catch (TelegramApiRequestException e) {
+            if (e.getApiResponse() != null && e.getApiResponse().contains("message is not modified")) {
+                // a fast double tap re-sends the same keyboard; nothing to fix
+                log.debug("Update {}: message not modified", update.getUpdateId());
+            } else {
+                log.error("Telegram rejected a reply to update {}: {}", update.getUpdateId(), e.getMessage());
             }
         } catch (RuntimeException | TelegramApiException e) {
             // one bad update must not stop the bot for everyone

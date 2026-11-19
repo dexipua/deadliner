@@ -35,6 +35,7 @@ class CommandHandlerIT {
             "https://teaching.kse.org.ua/calendar/export_execute.php?userid=7&authtoken=secret777";
     static final long ME = 2001L;
     static final long OTHER = 2002L;
+    static final String K = CommandHandler.courseKey("TEST101 (2026-2027)");
 
     @TestConfiguration(proxyBeanMethods = false)
     static class Stubs {
@@ -139,37 +140,37 @@ class CommandHandlerIT {
         BotReply reply = handler.handle(ME, "/group");
 
         assertThat(reply.buttons().getFirst().getFirst().text()).contains("TEST101").contains("усі групи");
-        assertThat(callbacks(reply)).containsExactly("grp:c:0");
+        assertThat(callbacks(reply)).containsExactly("grp:c:" + K);
     }
 
     @Test
     void choosingCourseShowsGroupNumbersInPlace() {
         handler.handle(ME, URL);
 
-        BotReply reply = handler.handleCallback(ME, "grp:c:0");
+        BotReply reply = handler.handleCallback(ME, "grp:c:" + K);
 
         assertThat(reply.mode()).isEqualTo(BotReply.Mode.EDIT);
-        assertThat(callbacks(reply)).contains("grp:s:0:1", "grp:s:0:10", "grp:r:0", "grp:list");
+        assertThat(callbacks(reply)).contains("grp:s:" + K + ":1", "grp:s:" + K + ":10", "grp:r:" + K, "grp:list");
     }
 
     @Test
     void settingGroupHidesOtherGroupsOfThatCourse() {
         handler.handle(ME, URL);
 
-        BotReply reply = handler.handleCallback(ME, "grp:s:0:3");
+        BotReply reply = handler.handleCallback(ME, "grp:s:" + K + ":3");
         assertThat(reply.buttons().getFirst().getFirst().text()).contains("група 3");
         assertThat(handler.handle(ME, "/deadlines").text()).doesNotContain("Квіз 1");
 
-        handler.handleCallback(ME, "grp:s:0:2");
+        handler.handleCallback(ME, "grp:s:" + K + ":2");
         assertThat(handler.handle(ME, "/deadlines").text()).contains("Квіз 1");
     }
 
     @Test
     void resetShowsAllGroupsAgain() {
         handler.handle(ME, URL);
-        handler.handleCallback(ME, "grp:s:0:3");
+        handler.handleCallback(ME, "grp:s:" + K + ":3");
 
-        handler.handleCallback(ME, "grp:r:0");
+        handler.handleCallback(ME, "grp:r:" + K);
 
         assertThat(handler.handle(ME, "/deadlines").text()).contains("Квіз 1");
     }
@@ -187,7 +188,7 @@ class CommandHandlerIT {
     void staleCourseButtonIsHandled() {
         handler.handle(ME, URL);
 
-        assertThat(handler.handleCallback(ME, "grp:s:9:1").mode()).isEqualTo(BotReply.Mode.TOAST);
+        assertThat(handler.handleCallback(ME, "grp:s:deadbeef:1").mode()).isEqualTo(BotReply.Mode.TOAST);
     }
 
     @Test
@@ -304,6 +305,66 @@ class CommandHandlerIT {
         handler.handleCallback(OTHER, "undo:" + myDeadline);
 
         assertThat(deadline(ME, "1003@teaching.kse.org.ua").getStatus()).isEqualTo(DeadlineStatus.DONE);
+    }
+
+    @Test
+    void doneOnDeadlineGoneFromMoodleIsRefused() {
+        handler.handle(ME, URL);
+        Deadline d = deadline(ME, "1003@teaching.kse.org.ua");
+        d.setStatus(DeadlineStatus.GONE);
+        deadlines.save(d);
+
+        handler.handleCallback(ME, "done:" + d.getId());
+
+        assertThat(deadline(ME, "1003@teaching.kse.org.ua").getStatus()).isEqualTo(DeadlineStatus.GONE);
+    }
+
+    @Test
+    void doneClearsPendingSnooze() {
+        handler.handle(ME, URL);
+        long id = deadline(ME, "1003@teaching.kse.org.ua").getId();
+        handler.handleCallback(ME, "snooze:" + id);
+
+        handler.handleCallback(ME, "done:" + id);
+
+        assertThat(jdbc.queryForObject("select count(*) from snooze", Integer.class)).isZero();
+    }
+
+    private long deadlineDueIn(java.time.Duration in) {
+        handler.handle(ME, URL);
+        Deadline d = new Deadline(userId(ME), "soon");
+        d.setTitle("Soon");
+        d.setDueAt(NOW.plus(in));
+        return deadlines.save(d).getId();
+    }
+
+    @Test
+    void snoozeCloseToDeadlineRemindsTenMinutesBefore() {
+        long id = deadlineDueIn(java.time.Duration.ofMinutes(40));
+
+        BotReply reply = handler.handleCallback(ME, "snooze:" + id);
+
+        assertThat(reply.text()).contains("14:30"); // due 12:40Z = 14:40 Kyiv, minus 10 min
+    }
+
+    @Test
+    void snoozeRightBeforeDeadlineIsRefused() {
+        long id = deadlineDueIn(java.time.Duration.ofMinutes(5));
+
+        BotReply reply = handler.handleCallback(ME, "snooze:" + id);
+
+        assertThat(reply.text()).contains("скоро");
+        assertThat(jdbc.queryForObject("select count(*) from snooze", Integer.class)).isZero();
+    }
+
+    @Test
+    void statsSuggestGroupUntilItIsSet() {
+        handler.handle(ME, URL);
+        assertThat(handler.handle(ME, "/stats").text()).contains("/group");
+
+        handler.handleCallback(ME, "grp:s:" + K + ":2");
+
+        assertThat(handler.handle(ME, "/stats").text()).doesNotContain("/group");
     }
 
     @Test

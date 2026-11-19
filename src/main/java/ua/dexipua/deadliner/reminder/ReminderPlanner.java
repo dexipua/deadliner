@@ -39,16 +39,20 @@ public class ReminderPlanner {
                 continue;
             }
             for (int offset : offsets) {
-                Instant sendAt = d.getDueAt().minus(Duration.ofMinutes(offset));
-                if (quietHours && QuietHours.isQuiet(sendAt) && QuietHours.end(sendAt).isBefore(d.getDueAt())) {
-                    sendAt = QuietHours.end(sendAt);
-                }
-                boolean inWindow = sendAt.isAfter(windowStart) && !sendAt.isAfter(now);
+                Instant onTime = d.getDueAt().minus(Duration.ofMinutes(offset));
+                Instant morning = QuietHours.isQuiet(onTime) && QuietHours.end(onTime).isBefore(d.getDueAt())
+                        ? QuietHours.end(onTime) : onTime;
+                // with quiet hours off, a reminder held overnight while they were on still goes out at 08:00
+                boolean inWindow = inWindow(morning, windowStart, now) || (!quietHours && inWindow(onTime, windowStart, now));
                 if (inWindow && !alreadySent.contains(new SentKey(d.getId(), offset, d.getDueAt()))) {
                     due.add(new DueReminder(d, offset));
                 }
             }
         }
         return due;
+    }
+
+    private static boolean inWindow(Instant at, Instant windowStart, Instant now) {
+        return at.isAfter(windowStart) && !at.isAfter(now);
     }
 }

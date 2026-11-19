@@ -4,3 +4,8 @@ target/
 *.iml
 .superpowers/
 src/test/resources/fixtures/*.real.ics
+.classpath
+.project
+.settings/
+.factorypath
+bin/

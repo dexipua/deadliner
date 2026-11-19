@@ -28,6 +28,18 @@ public class ReminderSettings {
         }
     }
 
+    /** Turns one offset on or off. */
+    public void toggle(long userId, int offset) {
+        int deleted = jdbc.sql("delete from reminder_setting where user_id = ? and offset_minutes = ?")
+                .params(userId, offset)
+                .update();
+        if (deleted == 0) {
+            jdbc.sql("insert into reminder_setting (user_id, offset_minutes) values (?, ?)")
+                    .params(userId, offset)
+                    .update();
+        }
+    }
+
     public Set<Integer> offsets(long userId) {
         return new TreeSet<>(jdbc.sql("select offset_minutes from reminder_setting where user_id = ?")
                 .param(userId)

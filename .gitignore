@@ -10,3 +10,4 @@ src/test/resources/fixtures/*.real.ics
 .factorypath
 bin/
 backups/
+graphify-out/

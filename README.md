@@ -1,24 +1,40 @@
-# Deadliner
+<p align="center">
+  <img src="docs/brand/avatar-clock.png" width="96" alt="Deadliner logo">
+</p>
 
-A Telegram bot that reminds students of the Kyiv School of Economics about their Moodle deadlines.
+<h1 align="center">Deadliner</h1>
 
-You paste your Moodle calendar link once. Deadliner then:
+<p align="center">
+  A Telegram bot and web dashboard that remind <a href="https://kse.ua">Kyiv School of Economics</a> students about their Moodle deadlines.<br>
+  <a href="https://github.com/dexipua/deadliner/actions/workflows/ci.yml"><img src="https://github.com/dexipua/deadliner/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
+  <img src="https://img.shields.io/badge/Java-21-orange" alt="Java 21">
+  <img src="https://img.shields.io/badge/Spring_Boot-4.1-6db33f" alt="Spring Boot 4.1">
+  <img src="https://img.shields.io/badge/React-19-61dafb" alt="React 19">
+  <img src="https://img.shields.io/badge/tests-175-brightgreen" alt="175 tests">
+</p>
 
-- reminds you **3 days, 1 day and 3 hours** before each deadline (you can change this);
+<p align="center">
+  <img src="docs/screenshots/deadlines.png" width="49%" alt="Deadlines page">
+  <img src="docs/screenshots/stats.png" width="49%" alt="Stats page">
+</p>
+
+## Why
+
+Moodle shows deadlines, but nobody opens Moodle at 22:00 to check what is due at 23:59. Deadliner reads each student's Moodle calendar and reminds them in Telegram, where they already are. I built it for myself and my classmates at KSE.
+
+## What it does
+
+Paste your Moodle calendar link into the bot once. Then Deadliner:
+
+- reminds you **3 days, 1 day and 3 hours** before each deadline, each reminder exactly once;
 - sends a **plan for the week** every Sunday at 19:00;
-- shows what is due in the next 7 days with `/deadlines`, plus anything overdue from the last 14 days;
-- lets you tap **✅ Done** (under a reminder or in `/deadlines`) so it stops reminding you, **↩️ Undo** if you tapped it by mistake, or **⏰ +1 hour** to be reminded again later;
-- hides quizzes of other seminar groups: `/group` lets you pick your group in each course with buttons;
-- keeps **quiet hours** (23:00–08:00 by default, or any hours you choose): reminders that fall inside arrive when they end, in one message, unless the deadline is earlier;
-- shows `/stats`: handed in on time, late, overdue and upcoming, per course.
+- keeps **quiet hours** you choose (23:00–08:00 by default): reminders that fall inside arrive when they end, unless the deadline is earlier;
+- lets you tap **✅ Done**, **↩️ Undo** or **⏰ +1 hour** right under a reminder;
+- hides quizzes of **other seminar groups** once you pick your group in each course;
+- shows **stats**: handed in on time, late, overdue, per course;
+- has a **web dashboard**: send `/web`, open the one-time link, no password.
 
-**Version 1.2.0** — the Telegram bot and a web dashboard (see [CHANGELOG](CHANGELOG.md)).
-
-### Web dashboard
-
-Send `/web` to the bot: it answers with a one-time link (10 minutes, single use). Opening it logs you in, with no password. The dashboard shows your deadlines (tick ✅ / untick), stats per course, and settings: reminder times, the weekly plan, quiet hours and your group in each course.
-
-| Command | What it does |
+| Bot command | What it does |
 |---|---|
 | `/start`, `/help` | How to connect your Moodle calendar |
 | `/deadlines` | The next 7 days and recent overdue, with ✅ buttons |
@@ -28,64 +44,70 @@ Send `/web` to the bot: it answers with a one-time link (10 minutes, single use)
 | `/web` | A login link for the web dashboard |
 | `/stop` | Delete all your data |
 
-<!-- TODO: GIF of the bot -->
+<p align="center">
+  <img src="docs/screenshots/settings.png" width="49%" alt="Settings page">
+  <img src="docs/screenshots/login.png" width="40%" alt="Login page">
+</p>
 
 ## How it works
 
 ```
-Telegram ⇄ Spring Boot app (long polling)
-             ├─ sync job, every 30 min: download each user's Moodle iCal feed → PostgreSQL
-             ├─ reminder job, every minute: send due reminders (each one exactly once)
-             └─ digest job, Sunday 19:00 Kyiv time
+Telegram ⇄ Spring Boot app ─┬─ bot (long polling) ── CommandHandler ── DeadlineActions
+                            ├─ /api + React dashboard (session from a one-time /web link)
+                            ├─ sync job, every 30 min: each user's Moodle iCal feed → PostgreSQL
+                            ├─ reminder job, every minute: ReminderPlanner → one merged message per user
+                            └─ digest job, Sunday 19:00 Kyiv time
 ```
 
-- **Data source:** Moodle's standard calendar export (iCal). Deadliner never sees your Moodle password.
-- **Which events count:** assignments (`… is due`) and quiz/feedback closings (`… закрито` / `… closes`). "Opens" events are skipped.
-- **Reminders exactly once:** every sent reminder is stored with the deadline's due date. If a teacher moves a deadline, you are reminded again for the new date.
-- **No burst on sign-up:** a reminder fires only near its send time (30-minute window). If you connect 2 hours before a deadline, you do not get the 3-day and 1-day reminders all at once.
+A few decisions worth a look (details in [the design doc](docs/superpowers/specs/2026-11-19-deadliner-design.md)):
 
-## Privacy
+- **Exactly-once reminders.** Every sent reminder is stored as `(deadline, offset, due date)`. A moved deadline gets new reminders; a restart or a failed send never duplicates or loses one inside a 30-minute window.
+- **No burst on sign-up.** Connecting 2 hours before a deadline does not fire the old "3 days left" and "1 day left" reminders.
+- **A Moodle outage is not a broken link.** Timeouts and 5xx don't count toward the "your link stopped working" warning; only invalid feeds and 4xx do.
+- **One user's failure never stops the jobs** for everyone else, and a user who blocks the bot is deactivated.
+- **Same rules everywhere.** The bot and the web API share `DeadlineActions`, so "done", "undo" and "snooze" behave identically.
 
-- The calendar link contains a personal token. It is stored **encrypted (AES-GCM)**, never logged, and the bot deletes your message with the link from the chat.
-- Only deadlines are stored: course, title and due date. Your Telegram name and username are not stored.
-- `/stop` deletes all your data.
+## Privacy and security
+
+- The calendar link contains a personal token. It is stored **encrypted (AES-GCM)**, never logged, and the bot deletes the message with it from the chat.
+- Web login uses one-time links (10 minutes, single use) and sessions in an HttpOnly, SameSite=Lax cookie; both are random tokens stored only as SHA-256 hashes. Changes require a CSRF header; pages can't be framed.
+- Only deadlines are stored (course, title, due date). Telegram names are not stored. `/stop` deletes everything.
 
 ## Tech
 
-Java 21 · Spring Boot 4.1 · Spring Data JPA · PostgreSQL 16 · Flyway · ical4j · TelegramBots 10 · JUnit 5 · Testcontainers · Docker · GitHub Actions
+**Backend:** Java 21, Spring Boot 4.1, Spring MVC, Spring Data JPA, PostgreSQL 16, Flyway, ical4j, TelegramBots 10<br>
+**Frontend:** React 19, TypeScript, Vite<br>
+**Quality:** 175 tests — JUnit 5, AssertJ, Mockito, Testcontainers (real PostgreSQL), MockMvc; two independent code reviews; GitHub Actions<br>
+**Ops:** Docker multi-stage image (bot + API + dashboard), Docker Compose with daily `pg_dump` backups
 
-## Run locally
+## Run it
 
-Requirements: JDK 21, Node 22 and Docker. `run-local.ps1` builds the dashboard once, starts PostgreSQL and the app; the dashboard is at http://127.0.0.1:8080. For frontend work, `cd web; npm run dev` serves it with hot reload on :5173.
-
-```bash
-cp .env.example .env              # fill in TELEGRAM_BOT_TOKEN and DEADLINER_FEED_KEY
-docker compose up -d              # local PostgreSQL
-./mvnw spring-boot:run
-```
-
-Generate the encryption key with `openssl rand -base64 32`.
-
-## Tests
+Requirements: JDK 21, Node 22, Docker.
 
 ```bash
-./mvnw verify                     # unit tests + integration tests (needs Docker)
+cp .env.example .env          # TELEGRAM_BOT_TOKEN from @BotFather, DEADLINER_FEED_KEY = openssl rand -base64 32
+./run-local.ps1               # builds the dashboard once, starts PostgreSQL and the app on :8080
+./mvnw verify                 # all tests (needs Docker)
 ```
 
-The integration tests run against a real PostgreSQL in Testcontainers. They use an anonymised copy of a real KSE feed (`src/test/resources/fixtures/kse-sample.ics`).
-
-## Deploy
-
-See [docs/deploy.md](docs/deploy.md).
+For frontend work, `cd web && npm run dev` serves the dashboard with hot reload on :5173. Production: [docs/deploy.md](docs/deploy.md).
 
 ## Project layout
 
 ```
 src/main/java/ua/dexipua/deadliner/
   feed/       link validation, encryption, iCal parsing, sync
-  deadline/   deadline entity
-  reminder/   reminder planning, reminder + digest jobs, message texts
+  deadline/   deadlines, actions (done/undo/snooze), groups, stats
+  reminder/   reminder planning, quiet hours, reminder + digest jobs, message texts
   bot/        Telegram commands and wiring
+  web/        login links, sessions, REST API
   user/       users
-docs/superpowers/   design and implementation plan
+web/          React dashboard
+docs/         design, plans, deploy guide, screenshots, brand
 ```
+
+## Status
+
+Version 1.2.0 — see the [changelog](CHANGELOG.md). Next: hosting it for classmates.
+
+Made by [Artem Moseichenko](https://www.linkedin.com/in/artem-moseichenko/) · [portfolio](https://dexipua.github.io/)

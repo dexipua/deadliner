@@ -50,6 +50,7 @@ public class TelegramConfig {
                     new BotCommand("stats", "Моя статистика"),
                     new BotCommand("settings", "Нагадування й тихі години"),
                     new BotCommand("group", "Мої групи по курсах"),
+                    new BotCommand("web", "Відкрити вебпанель"),
                     new BotCommand("help", "Як підключити Moodle"),
                     new BotCommand("stop", "Видалити мої дані"))).build());
         } catch (TelegramApiException e) {

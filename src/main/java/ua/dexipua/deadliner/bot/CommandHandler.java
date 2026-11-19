@@ -14,6 +14,7 @@ import ua.dexipua.deadliner.reminder.MessageFormatter;
 import ua.dexipua.deadliner.reminder.ReminderSettings;
 import ua.dexipua.deadliner.user.AppUser;
 import ua.dexipua.deadliner.user.AppUserRepository;
+import ua.dexipua.deadliner.web.WebAuthService;
 
 import java.time.Clock;
 import java.time.Duration;
@@ -40,11 +41,13 @@ public class CommandHandler {
     private final ReminderSettings settings;
     private final MessageFormatter formatter;
     private final DeadlineActions actions;
+    private final WebAuthService webAuth;
     private final CourseGroups courseGroups;
     private final Clock clock;
 
     public CommandHandler(FeedSyncService feedSync, AppUserRepository users, DeadlineRepository deadlines,
                           ReminderSettings settings, MessageFormatter formatter, DeadlineActions actions, CourseGroups courseGroups,
+                          WebAuthService webAuth,
                           Clock clock) {
         this.feedSync = feedSync;
         this.users = users;
@@ -52,6 +55,7 @@ public class CommandHandler {
         this.settings = settings;
         this.formatter = formatter;
         this.actions = actions;
+        this.webAuth = webAuth;
         this.courseGroups = courseGroups;
         this.clock = clock;
     }
@@ -64,6 +68,9 @@ public class CommandHandler {
             case "/start" -> BotReply.withButtons(Texts.START,
                     List.of(List.of(new InlineButton(Texts.HELP_BUTTON, HELP_LINK))));
             case "/help" -> BotReply.of(Texts.HOW_TO_CONNECT);
+            case "/web" -> user(telegramId)
+                    .map(u -> BotReply.of(Texts.WEB_LINK.formatted(webAuth.issueLink(u.getId()))))
+                    .orElse(BotReply.of(Texts.NOT_CONNECTED));
             case "/deadlines" -> deadlinesCommand(telegramId);
             case "/stats" -> user(telegramId).map(this::statsCommand).orElse(BotReply.of(Texts.NOT_CONNECTED));
             case "/settings" -> user(telegramId)
@@ -203,7 +210,7 @@ public class CommandHandler {
 
     /** 8 hex chars; course names are too long for Telegram's 64-byte callback data. */
     static String courseKey(String course) {
-        return String.format("%08x", course.hashCode());
+        return ua.dexipua.deadliner.deadline.GroupFilter.courseKey(course);
     }
 
     private List<List<InlineButton>> courseButtons(AppUser user, List<String> courses) {

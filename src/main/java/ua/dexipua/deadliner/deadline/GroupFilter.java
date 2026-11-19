@@ -35,6 +35,11 @@ public final class GroupFilter {
         return GROUP.matcher(d.getTitle()).find();
     }
 
+    /** 8 hex chars naming a course in buttons and URLs; course names are too long for Telegram's 64-byte callback data. */
+    public static String courseKey(String course) {
+        return String.format("%08x", course.hashCode());
+    }
+
     /** Courses that have group-specific deadlines, sorted by name. */
     public static List<String> coursesWithGroups(List<Deadline> deadlines) {
         return deadlines.stream()

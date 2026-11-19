@@ -22,3 +22,7 @@ deadliner:
   feed-key: ${DEADLINER_FEED_KEY}
   telegram:
     token: ${TELEGRAM_BOT_TOKEN}
+    username: ${TELEGRAM_BOT_USERNAME:}
+  web:
+    # where the dashboard is opened; links from /web point here
+    base-url: ${DEADLINER_WEB_URL:http://127.0.0.1:8080}
